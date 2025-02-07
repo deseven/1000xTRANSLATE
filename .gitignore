@@ -1,0 +1,12 @@
+node_modules/
+1000xRESIST/
+!resources/
+*.exe
+*.txt
+*.bundle
+*.zip
+*.log
+.env
+.venv
+*.json
+*.assets

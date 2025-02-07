@@ -1,0 +1,19 @@
+{
+  "name": "1000xtranslate",
+  "version": "1.0.0",
+  "description": "A collection of tools to translate 1000xRESIST into your language",
+  "main": "index.js",
+  "scripts": {
+    "install:exporter": "cd 1-exporter && ./install.sh",
+    "install:sheetifier": "cd 2-sheetifier",
+    "install:translator": "cd 3-translator && npm install",
+    "install:checker": "cd 4-checker",
+    "install:desheetifier": "cd 5-desheetifier",
+    "install:bbb": "cd 6-boom-boom-builder",
+    "install": "npm run install:exporter && npm run install:sheetifier && npm run install:translator && npm run install:checker && npm run install:desheetifier && npm run install:bbb",
+    "exporter": "cd 1-exporter && source .venv/bin/activate && python main.py",
+    "sheetifier": "cd 2-sheetifier && node index.js"
+  },
+  "author": "deseven",
+  "license": "ISC"
+}
