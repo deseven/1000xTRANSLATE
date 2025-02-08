@@ -9,4 +9,5 @@ node_modules/
 .env
 .venv
 *.json
+!package.json
 *.assets

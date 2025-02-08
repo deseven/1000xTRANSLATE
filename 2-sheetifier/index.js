@@ -9,7 +9,7 @@ let allQuests = [];
 let allActors = [];
 let allDialogues = [];
 
-const chapterDefinitions = JSON.parse(fs.readFileSync('chapter-definitions.json', 'utf-8'));
+const chapterDefinitions = JSON.parse(fs.readFileSync('../data/chapter-definitions.json', 'utf-8'));
 
 function getAllJsonFiles(dir, files = []) {
     const items = fs.readdirSync(dir);
@@ -154,7 +154,7 @@ const sortedDialogues = allDialogues
 process.on('exit', () => {
     console.log(`Results:\nUnique Actors (${allActors.length})\nQuests (${allQuests.length})\nDialogues (${allDialogues.length})`);
 
-    fs.writeFileSync('actors.json', JSON.stringify(allActors, null, 2));
-    fs.writeFileSync('quests.json', JSON.stringify(allQuests, null, 2));
-    fs.writeFileSync('dialogues.json', JSON.stringify(sortedDialogues, null, 2));
+    fs.writeFileSync('../data/parsed_actors.json', JSON.stringify(allActors, null, 2));
+    fs.writeFileSync('../data/parsed_quests.json', JSON.stringify(allQuests, null, 2));
+    fs.writeFileSync('../data/parsed_dialogues.json', JSON.stringify(sortedDialogues, null, 2));
 });
