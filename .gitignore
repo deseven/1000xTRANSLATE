@@ -1,13 +1,16 @@
 node_modules/
 1000xRESIST/
 !resources/
+!distr/
 *.exe
 *.txt
 *.bundle
+*.json
 *.zip
 *.log
 .env
 .venv
-*.json
 !package.json
+!data/chapter-definitions.json
+!data/I2.loc.typetree.json
 *.assets

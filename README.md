@@ -37,7 +37,7 @@ Parses exported game data from `RES_DIR` into human-readable format, imports it 
 Pulls translated strings from Google Sheets and inserts them into the game data.
 
 ### Boom Boom Build
-Imports the build data into the game files, packs everything that was change for a distribution (I'll probably start with just a bsic zip file, but TBD).
+Imports the build data into the game files, packs everything that was change for a distribution (I'll probably start with just a basic zip file, but TBD).
 
 
 ## Prerequisites

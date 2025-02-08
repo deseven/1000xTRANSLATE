@@ -13,8 +13,8 @@
     "install:desheetifier": "cd 5-desheetifier",
     "install:bbb": "cd 6-boom-boom-build",
     "install": "npm run install:exporter && npm run install:sheetifier && npm run install:translator && npm run install:checker && npm run install:desheetifier && npm run install:bbb",
-    "exporter": "npm run check && cd 1-exporter && ../tools/check-module.sh && source .venv/bin/activate && python3 main.py",
-    "sheetifier": "npm run check && cd 2-sheetifier && ../tools/check-module.sh && node index.js"
+    "exporter": "npm run check && cd 1-exporter && ../tools/check-function.sh && source .venv/bin/activate && python3 main.py",
+    "sheetifier": "npm run check && cd 2-sheetifier && ../tools/check-function.sh && node index.js"
   },
   "author": "deseven",
   "license": "ISC"
