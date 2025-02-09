@@ -61,7 +61,7 @@ More thorough instruction will come later, when things are a bit more stable. Fo
 
 
 ## Thanks
-**K0lb3** for his work on UnityPy, without which none of this would've been possible
-**VaDiM** and **idkwhatimsaying** for helping with typetree extraction
-**turinar71** (who is the author of the Italian translation, btw) for some useful info
-**K_A_S_a_L_E_X** for original data mining
+ - **K0lb3** for his work on UnityPy, without which none of this would've been possible
+ - **VaDiM** and **idkwhatimsaying** for helping with typetree extraction
+ - **turinar71** (who is the author of the Italian translation, btw) for some useful info
+ - **K_A_S_a_L_E_X** for original data mining
