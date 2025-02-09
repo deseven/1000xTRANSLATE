@@ -43,5 +43,11 @@ for folder in *-*; do
   fi
 done
 
+# Handle ThousandXspreadsheeT deps
+if [ -d "tools/ThousandXspreadsheeT/node_modules/" ]; then
+  rm -rf "tools/ThousandXspreadsheeT/node_modules/"
+  rm -f "tools/ThousandXspreadsheeT/package-lock.json"
+fi
+
 # clean up data dir
 rm -f data/parsed-*.json

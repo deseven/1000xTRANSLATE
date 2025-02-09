@@ -1,0 +1,14 @@
+{
+  "name": "thousandxspreadsheet",
+  "version": "1.0.0",
+  "description": "a class to work with 1000xTRANSLATE Google Sheet document",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "deseven",
+  "license": "ISC",
+  "dependencies": {
+    "googleapis": "^144.0.0"
+  }
+}

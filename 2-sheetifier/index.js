@@ -1,6 +1,8 @@
 const dotenv = require('dotenv');
 const fs = require('fs');
 const path = require('path');
+const ThousandXspreadsheeT = require('../tools/ThousandXspreadsheeT');
+const sleep = ms => new Promise(res => setTimeout(res, ms));
 
 dotenv.config({ path: '../.env' });
 const resDir = path.join(__dirname, '../', process.env.RES_DIR);
@@ -40,11 +42,13 @@ if (i2LanguagesFile) {
         console.log(`Processing ${i2LanguagesFile}...`);
         const data = JSON.parse(fs.readFileSync(i2LanguagesFile, 'utf-8'));
         const lang_numeric = lang_bind[process.env.BASE_LANG];
+        let termText = '';
 
         if (data.mSource?.mTerms?.length) {
             data.mSource.mTerms.forEach(term => {
                 if (term.TermType === 0 && term.Languages?.[lang_numeric]) {
-                    allTerms[term.Term] = term.Languages[lang_numeric];
+                    termText = term.Languages[lang_numeric];
+                    allTerms[term.Term] = termText.replace(/\t/g, '\\t');
                 }
             });
         }
@@ -56,7 +60,7 @@ if (i2LanguagesFile) {
 
 jsonFiles.forEach(file => {
     if (path.basename(file) === 'I2Languages.json') return;
-    
+
     try {
         console.log(`Processing ${file}...`);
         const data = JSON.parse(fs.readFileSync(file, 'utf-8'));
@@ -148,10 +152,10 @@ jsonFiles.forEach(file => {
                     );
 
                     let actorText;
-                    const conversantField = entry.fields?.find(f => f.title === 'Conversant');
-                    if (conversantField?.value && data.actors?.length) {
+                    const actorField = entry.fields?.find(f => f.title === 'Actor');
+                    if (actorField?.value && data.actors?.length) {
                         const actor = data.actors.find(a =>
-                            a.id.toString() === conversantField.value.toString()
+                            a.id.toString() === actorField.value.toString()
                         );
                         const actorNameField = actor?.fields?.find(f =>
                             f.type === 4 &&
@@ -227,3 +231,107 @@ fs.writeFileSync('../data/parsed_actors.json', JSON.stringify(allActors, null, 2
 fs.writeFileSync('../data/parsed_quests.json', JSON.stringify(allQuests, null, 2));
 fs.writeFileSync('../data/parsed_dialogues.json', JSON.stringify(allDialogues, null, 2));
 fs.writeFileSync('../data/parsed_terms.json', JSON.stringify(allTerms, null, 2));
+
+// this was originally 2 separate scripts,
+// that why we're reading the files we've just saved, but whatever
+
+console.log(`\nUploading data to the document...`);
+
+const files = {
+    actors:    '../data/parsed_actors.json',
+    quests:    '../data/parsed_quests.json',
+    dialogues: '../data/parsed_dialogues.json',
+    system:    '../data/parsed_terms.json'
+};
+
+async function main() {
+    try {
+        const spreadsheet = new ThousandXspreadsheeT({
+            GOOGLE_CREDENTIALS_FILE: '../' + process.env.GOOGLE_CREDENTIALS_FILE,
+            SPREADSHEET_ID: process.env.SPREADSHEET_ID,
+            ACTORS_SHEET_NAME: process.env.ACTORS_SHEET_NAME,
+            QUESTS_SHEET_NAME: process.env.QUESTS_SHEET_NAME,
+            SYSTEM_SHEET_NAME: process.env.SYSTEM_SHEET_NAME,
+            DIALOGUES_SHEET_NAME: process.env.DIALOGUES_SHEET_NAME
+        });
+
+        // Load and process actors
+        console.log("Uploading actors...")
+        const actorsData = JSON.parse(fs.readFileSync(files.actors, 'utf8')); 
+        const actorsStrings = {};
+        for (const [key, value] of Object.entries(actorsData)) {
+            actorsStrings[`Actor/${key}`] = { original: value };
+        }
+        await spreadsheet.replaceActors(actorsStrings);
+
+        await sleep(1000); // thx google, in 2025 your own library has no clue about your rate limits
+
+        // Load and process quests
+        console.log("Uploading quests...")
+        const questsData = JSON.parse(fs.readFileSync(files.quests, 'utf8'));
+        const questsStrings = {};
+        for (const [key, value] of Object.entries(questsData)) {
+            questsStrings[`Quest/${key}`] = { original: value };
+        }
+        await spreadsheet.replaceQuests(questsStrings);
+
+        await sleep(1000);
+
+        // Load and process system terms
+        console.log("Uploading system...")
+        const systemData = JSON.parse(fs.readFileSync(files.system, 'utf8'));
+        const systemStrings = {};
+        for (const [key, value] of Object.entries(systemData)) {
+            systemStrings[`System/${key}`] = { original: value };
+        }
+        await spreadsheet.replaceSystem(systemStrings);
+
+        await sleep(1000);
+
+        // Load and process dialogues
+        console.log("Uploading dialogues...")
+        const dialoguesData = JSON.parse(fs.readFileSync(files.dialogues, 'utf8'));
+        const dialoguesStrings = {};
+        const actorTexts = new Set();
+        for (const [key, entry] of Object.entries(dialoguesData)) {
+            const baseKey = `Dialogue/${key}`;
+            const actor = entry.actor_text;
+            if (actor !== undefined) {
+                actorTexts.add(actor);
+            }
+
+            if (entry.menu_text) {
+                const menuKey = `${baseKey}/MenuText`;
+                dialoguesStrings[menuKey] = {
+                    actor: actor,
+                    original: entry.menu_text
+                };
+            }
+
+            const dialogueKey = `${baseKey}/DialogueText`;
+            dialoguesStrings[dialogueKey] = {
+                actor: actor,
+                original: entry.dialogue_text
+            };
+        }
+        await spreadsheet.replaceDialogues(dialoguesStrings);
+
+        await sleep(1000);
+
+        // Process and replace Chars vocab
+        console.log("Uploading unique chars to vocabulary...")
+        const sortedActorTexts = Array.from(actorTexts).sort();
+        const vocabStrings = {};
+        sortedActorTexts.forEach(actor => {
+            vocabStrings[actor] = null; // we only need keys
+        });
+        await spreadsheet.replaceVocab('Chars', vocabStrings);
+
+        console.log('All data processed and uploaded successfully.');
+    } catch (error) {
+        console.error('Error:', error);
+        process.exit(1);
+    }
+}
+
+main();

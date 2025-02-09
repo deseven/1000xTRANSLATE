@@ -1,4 +1,3 @@
-
 # 1000xTRANSLATE
 A full toolset that will help you to translate [1000xRESIST](https://store.steampowered.com/app/1675830/1000xRESIST/) to your favourite language. Work in progress, the first major milestone is to be able to export, parse, translate and import all visible text data.
 
@@ -14,12 +13,12 @@ The toolset is intended to be used in the following way:
 ## Functions
 | Function          | State | Description                                                         |
 | ----------------- | ----- | ------------------------------------------------------------------- |
-| Exporter          | works | Exports required game data                                          |
-| Sheetifier        | WIP   | Parses game data and imports all strings into Google Sheets         |
+| Exporter          | done  | Exports required game data                                          |
+| Sheetifier        | done  | Parses game data and imports all strings into Google Sheets         |
 | Translator        | WIP   | (optional) Translates strings using LLMs                            |
 | Checker           | TO DO | (optional) Checks for abnormalities in the strings                  |
 | Desheetifier      | WIP   | Pulls all strings from Google Sheets and writes them into game data | 
-| Boom Boom Build   | TO DO | Imports required game data, creates distribution packages           |
+| Boom Boom Build   | WIP   | Imports required game data, creates distribution packages           |
 
 ### Exporter
 Exports required game data from `GAME_DIR` to `RES_DIR` using [UnityPy](https://github.com/K0lb3/UnityPy). It tries to be as version-agnostic as possible to support any patch version of the game (we'll see about that). Game files that we need are `resources.assets` and individual bundles listed in [the bundles list](data/bundles.list).
@@ -41,6 +40,7 @@ Imports the build data into the game files, packs everything that was change for
 
 
 ## Prerequisites
+ - Linux/macOS (for now, Windows shouldn't be a problem with minor tweaks)
  - bash 3 or higher
  - node.js 20 or higher
  - python 3.9 or higher
@@ -48,4 +48,20 @@ Imports the build data into the game files, packs everything that was change for
 
 
 ## Installation & Usage
-TODO: later, when things are a bit more stable
+More thorough instruction will come later, when things are a bit more stable. For now:
+1. Clone this repo to somewhere.
+2. Install node, python, uv.
+3. Copy [Google Sheets document](https://docs.google.com/spreadsheets/d/10KcHa_iS_RSgsVauCDe6EKbskN4iZfaT9PPjdGJk--4/edit?usp=sharing) under your name.
+4. Set up [a service account](https://console.cloud.google.com/), get a JSON file with credentials, share the document you copied with this service account's email.
+5. Copy `.env.example` to `.env` and edit it.
+6. Run `npm run check` to see if anything is wrong.
+7. Run `npm run install` to install all needed internal dependencies.
+8. Run `npm run exporter` to export what we need from the game.
+9. Run `npm run sheetifier` to parse and upload everything to the Google Sheets document.
+
+
+## Thanks
+**K0lb3** for his work on UnityPy, without which none of this would've been possible
+**VaDiM** and **idkwhatimsaying** for helping with typetree extraction
+**turinar71** (who is the author of the Italian translation, btw) for some useful info
+**K_A_S_a_L_E_X** for original data mining
