@@ -17,7 +17,7 @@ The toolset is intended to be used in the following way:
 | Sheetifier        | done  | Parses game data and imports all strings into Google Sheets         |
 | Translator        | WIP   | (optional) Translates strings using LLMs                            |
 | Checker           | TO DO | (optional) Checks for abnormalities in the strings                  |
-| Desheetifier      | WIP   | Pulls all strings from Google Sheets and writes them into game data | 
+| Desheetifier      | done  | Pulls all strings from Google Sheets and writes them into game data | 
 | Boom Boom Build   | WIP   | Imports required game data, creates distribution packages           |
 
 ### Exporter

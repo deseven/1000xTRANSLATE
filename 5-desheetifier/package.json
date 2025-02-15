@@ -1,0 +1,14 @@
+{
+  "name": "1000xtranslate-desheetifier",
+  "version": "1.0.0",
+  "description": "a script that gets translated strings from the google spreadsheet and puts them back into original game resources",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "deseven",
+  "license": "ISC",
+  "dependencies": {
+    "dotenv": "^16.4.7"
+  }
+}
