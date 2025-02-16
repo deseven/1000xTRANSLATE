@@ -3,22 +3,26 @@ import json
 import UnityPy
 from dotenv import load_dotenv
 
-load_dotenv('../.env')
+load_dotenv(os.path.join(os.path.dirname(__file__), '../.env'))
 UnityPy.config.FALLBACK_UNITY_VERSION = os.getenv('GAME_UNITY_VERSION')
-data_dir = '../' + os.getenv('GAME_DATA_DIR')
-res_dir = '../' + os.getenv('RES_DIR')
+data_dir = os.getenv('GAME_DATA_DIR')
+if not os.path.isabs(data_dir):
+    data_dir = os.path.join(os.path.dirname(__file__), '..', data_dir)
+res_dir = os.getenv('RES_DIR')
+if not os.path.isabs(res_dir):
+    res_dir = os.path.join(os.path.dirname(__file__), '..', res_dir)
 
 if os.getenv('UNITYPY_USE_PYTHON_PARSER') == 'true':
     from UnityPy.helpers import TypeTreeHelper
     TypeTreeHelper.read_typetree_boost = False
 
-with open('../data/bundles.list', 'r') as f:
+with open(os.path.join(os.path.dirname(__file__), '../data/bundles.list'), 'r') as f:
     bundles = [line.strip() for line in f.readlines()]
 
-with open('../data/I2.loc.typetree.json', 'r') as f:
+with open(os.path.join(os.path.dirname(__file__), '../data/I2.loc.typetree.json'), 'r') as f:
     I2LocTypetree = json.load(f)
 
-file_path = data_dir + '/resources.assets'
+file_path = os.path.join(data_dir, 'resources.assets')
 print(f"Processing {file_path}")
 env = UnityPy.load(file_path)
 found = False
@@ -36,15 +40,15 @@ for obj in env.objects:
             typetree = obj.read_typetree(I2LocTypetree['I2.Loc.LanguageSourceAsset'])
             json_data = json.dumps(typetree, indent=4, ensure_ascii=False)
             os.makedirs(res_dir, exist_ok=True)
-            with open(res_dir + "/I2Languages.json", 'w', encoding='utf-8') as f:
+            with open(os.path.join(res_dir, "I2Languages.json"), 'w', encoding='utf-8') as f:
                 f.write(json_data)
             break
 
 for bundle_name in bundles:
-    file_path = data_dir + bundle_name
+    file_path = os.path.join(data_dir, bundle_name)
     print(f"Processing {file_path}")
     env = UnityPy.load(file_path)
-    bundle_dest = res_dir + "/" + os.path.basename(bundle_name)
+    bundle_dest = os.path.join(res_dir, os.path.basename(bundle_name))
 
     for asset_path, obj in env.container.items():
         if obj.type.name == 'MonoBehaviour':

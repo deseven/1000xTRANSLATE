@@ -5,24 +5,32 @@ from dotenv import load_dotenv
 
 load_dotenv('../.env')
 UnityPy.config.FALLBACK_UNITY_VERSION = os.getenv('GAME_UNITY_VERSION')
-data_dir = '../' + os.getenv('GAME_DATA_DIR')
-res_dir = '../' + os.getenv('RES_DIR')
-out_dir = '../' + os.getenv('OUT_DIR') + '/1000xRESIST_Data'
+
+# Handle both relative and absolute paths
+def get_path(env_var):
+    path = os.getenv(env_var)
+    if os.path.isabs(path):
+        return path
+    return os.path.join('..', path)
+
+data_dir = get_path('GAME_DATA_DIR')
+res_dir = get_path('RES_DIR')
+out_dir = os.path.join(get_path('OUT_DIR'), '1000xRESIST_Data')
 
 if os.getenv('UNITYPY_USE_PYTHON_PARSER') == 'true':
     from UnityPy.helpers import TypeTreeHelper
     TypeTreeHelper.read_typetree_boost = False
 
-with open('../data/bundles.list', 'r') as f:
+with open(os.path.join('..', 'data', 'bundles.list'), 'r') as f:
     bundles = [line.strip() for line in f.readlines()]
 
-with open('../data/I2.loc.typetree.json', 'r') as f:
+with open(os.path.join('..', 'data', 'I2.loc.typetree.json'), 'r') as f:
     I2LocTypetree = json.load(f)
 
-with open(res_dir + '/I2Languages.json', 'r') as f: # previously exported with read_typetree() + json.dumps()
+with open(os.path.join(res_dir, 'I2Languages.json'), 'r') as f:
     I2Languages = json.load(f)
 
-file_path = data_dir + '/resources.assets'
+file_path = os.path.join(data_dir, 'resources.assets')
 print(f"Processing {file_path}")
 env = UnityPy.load(file_path)
 found = False
@@ -39,15 +47,15 @@ for obj in env.objects:
         if found:
             obj.save_typetree(I2Languages,I2LocTypetree['I2.Loc.LanguageSourceAsset'])
             os.makedirs(out_dir, exist_ok=True)
-            with open(out_dir + '/resources.assets', "wb") as f:
+            with open(os.path.join(out_dir, 'resources.assets'), "wb") as f:
                 f.write(env.file.save(packer="original"))
             break
 
 for bundle_name in bundles:
-    file_path = data_dir + bundle_name
+    file_path = os.path.join(data_dir, bundle_name)
     print(f"Processing {file_path}")
     env = UnityPy.load(file_path)
-    bundle_dest = res_dir + "/" + os.path.basename(bundle_name)
+    bundle_dest = os.path.join(res_dir, os.path.basename(bundle_name))
 
     for asset_path, obj in env.container.items():
         if obj.type.name == 'MonoBehaviour':
@@ -76,6 +84,6 @@ for bundle_name in bundles:
                 if typetree:
                     objd = obj.deref()
                     objd.save_typetree(typetree)
-                    os.makedirs(out_dir + os.path.dirname(bundle_name), exist_ok=True)
-                    with open(out_dir + bundle_name, "wb") as f:
+                    os.makedirs(os.path.join(out_dir, os.path.dirname(bundle_name)), exist_ok=True)
+                    with open(os.path.join(out_dir, bundle_name), "wb") as f:
                         f.write(env.file.save(packer="original"))

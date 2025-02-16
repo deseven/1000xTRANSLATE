@@ -4,15 +4,17 @@ const path = require('path');
 const ThousandXspreadsheeT = require('../tools/ThousandXspreadsheeT');
 const sleep = ms => new Promise(res => setTimeout(res, ms));
 
-dotenv.config({ path: '../.env' });
-const resDir = path.join(__dirname, '../', process.env.RES_DIR);
+dotenv.config({ path: path.join(__dirname, '../.env') });
+const resDir = path.isAbsolute(process.env.RES_DIR) 
+    ? process.env.RES_DIR 
+    : path.join(__dirname, '../', process.env.RES_DIR);
 
 let allQuests = [];
 let allActors = [];
 let allDialogues = [];
 let allTerms = {};
 
-const chapterDefinitions = JSON.parse(fs.readFileSync('../data/chapter-definitions.json', 'utf-8'));
+const chapterDefinitions = JSON.parse(fs.readFileSync(path.join(__dirname, '../data/chapter-definitions.json'), 'utf-8'));
 
 const lang_bind = {
     en: 0,
@@ -235,10 +237,10 @@ allQuests = allQuests
 // Final output and file generation
 console.log(`Results:\nUnique Actors (${Object.keys(allActors).length})\nQuests (${Object.keys(allQuests).length})\nDialogues (${Object.keys(allDialogues).length})\nTerms (${Object.keys(allTerms).length})`);
 
-fs.writeFileSync('../data/parsed_actors.json', JSON.stringify(allActors, null, 2));
-fs.writeFileSync('../data/parsed_quests.json', JSON.stringify(allQuests, null, 2));
-fs.writeFileSync('../data/parsed_dialogues.json', JSON.stringify(allDialogues, null, 2));
-fs.writeFileSync('../data/parsed_terms.json', JSON.stringify(allTerms, null, 2));
+fs.writeFileSync(path.join(__dirname, '../data/parsed_actors.json'), JSON.stringify(allActors, null, 2));
+fs.writeFileSync(path.join(__dirname, '../data/parsed_quests.json'), JSON.stringify(allQuests, null, 2));
+fs.writeFileSync(path.join(__dirname, '../data/parsed_dialogues.json'), JSON.stringify(allDialogues, null, 2));
+fs.writeFileSync(path.join(__dirname, '../data/parsed_terms.json'), JSON.stringify(allTerms, null, 2));
 
 // this was originally 2 separate scripts,
 // that why we're reading the files we've just saved, but whatever
@@ -246,16 +248,16 @@ fs.writeFileSync('../data/parsed_terms.json', JSON.stringify(allTerms, null, 2))
 console.log(`\nUploading data to the document...`);
 
 const files = {
-    actors:    '../data/parsed_actors.json',
-    quests:    '../data/parsed_quests.json',
-    dialogues: '../data/parsed_dialogues.json',
-    system:    '../data/parsed_terms.json'
+    actors:    path.join(__dirname, '../data/parsed_actors.json'),
+    quests:    path.join(__dirname, '../data/parsed_quests.json'),
+    dialogues: path.join(__dirname, '../data/parsed_dialogues.json'),
+    system:    path.join(__dirname, '../data/parsed_terms.json')
 };
 
 async function main() {
     try {
         const spreadsheet = new ThousandXspreadsheeT({
-            GOOGLE_CREDENTIALS_FILE: '../' + process.env.GOOGLE_CREDENTIALS_FILE,
+            GOOGLE_CREDENTIALS_FILE: path.join(__dirname, '../' + process.env.GOOGLE_CREDENTIALS_FILE),
             SPREADSHEET_ID: process.env.SPREADSHEET_ID,
             ACTORS_SHEET_NAME: process.env.ACTORS_SHEET_NAME,
             QUESTS_SHEET_NAME: process.env.QUESTS_SHEET_NAME,
