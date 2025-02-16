@@ -23,7 +23,7 @@ The toolset is intended to be used in the following way:
 ### Exporter
 Exports required game data from `GAME_DIR` to `RES_DIR` using [UnityPy](https://github.com/K0lb3/UnityPy). It tries to be as version-agnostic as possible to support any patch version of the game (we'll see about that). Game files that we need are `resources.assets` and individual bundles listed in [the bundles list](data/bundles.list).
 
-###  Sheetifier
+### Sheetifier
 Parses exported game data from `RES_DIR` into human-readable format, imports it into the pre-defined Google Sheets document (`SPREADSHEET_ID` and the rest). If there already were some strings, it appends only missing strings. The function tries to sort the strings into chapters (see [chapter definitions](data/chapter-definitions.json)). The name is non-negotiable.
 
 ### Translator
@@ -33,14 +33,14 @@ Parses exported game data from `RES_DIR` into human-readable format, imports it 
 *(optional)* Checks for abnormalities in the strings using LLMs, creating a report of what was found.
 
 ### Desheetifier
-Pulls translated strings from Google Sheets and inserts them into the game data.
+Pulls translated strings from Google Sheets and inserts them into the game data in `RES_DIR`.
 
 ### Boom Boom Build
-Imports the build data into the game files, packs everything that was change for a distribution (I'll probably start with just a basic zip file, but TBD).
+Imports resources from `RES_DIR` into the game files, outputs changed bundles ready to be replaced in the game directory.
 
 
 ## Prerequisites
- - Linux/macOS (for now, Windows shouldn't be a problem with minor tweaks)
+ - Linux/macOS/Windows
  - bash 3 or higher
  - node.js 20 or higher
  - python 3.9 or higher
@@ -48,16 +48,21 @@ Imports the build data into the game files, packs everything that was change for
 
 
 ## Installation & Usage
-More thorough instruction will come later, when things are a bit more stable. For now:
-1. Clone this repo to somewhere.
+More thorough instruction will come later, when things are a bit more stable.
+
+### Installation
+1. Clone this repo.
 2. Install bash, node, python, uv.
 3. Copy [Google Sheets document](https://docs.google.com/spreadsheets/d/10KcHa_iS_RSgsVauCDe6EKbskN4iZfaT9PPjdGJk--4/edit?usp=sharing) under your name.
-4. Set up [a service account](https://console.cloud.google.com/), get a JSON file with credentials, share the document you copied with this service account's email.
+4. Set up [a service account](https://console.cloud.google.com/) (google "How to get service account to access google sheets" if you're not sure how to do that), get a JSON file with credentials, share the document you copied with this service account's email.
 5. Copy `.env.example` to `.env` and edit it.
 6. Run `npm run check` to see if anything is wrong.
 7. Run `npm run install` to install all needed internal dependencies.
-8. Run `npm run init` to export what we need from the game, parse it an upload to the Google Sheets document.
-9. Run `npm run build` to download current translation from the Google Sheet document and import it to the game files.
+
+### Usage
+ - Run `npm run init` to export what we need from the game, parse it an upload to the Google Sheets document. Don't be afraid to re-run it, it won't overwrite your translation.
+ - Run `npm run build` to download current translation from the Google Sheet document and import it to the game files. Repeat every time you want to test your translation.
+ - See `npm run` for more commands (for advanced users).
 
 
 ## Thanks
