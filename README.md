@@ -40,6 +40,7 @@ Imports resources from `RES_DIR` into the game files, outputs changed bundles re
 
 
 ## Prerequisites
+ - a copy of game files (everything under `1000xRESIST_Data`)
  - Linux/macOS/Windows
  - bash 3 or higher
  - node.js 20 or higher
@@ -55,7 +56,7 @@ More thorough instruction will come later, when things are a bit more stable.
 2. Install bash, node, python, uv.
 3. Copy [Google Sheets document](https://docs.google.com/spreadsheets/d/10KcHa_iS_RSgsVauCDe6EKbskN4iZfaT9PPjdGJk--4/edit?usp=sharing) under your name.
 4. Set up [a service account](https://console.cloud.google.com/) (google "How to get service account to access google sheets" if you're not sure how to do that), get a JSON file with credentials, share the document you copied with this service account's email.
-5. Copy `.env.example` to `.env` and edit it.
+5. Copy `.env.example` to `.env` and edit it, following the comments.
 6. Run `npm run check` to see if anything is wrong.
 7. Run `npm run install` to install all needed internal dependencies.
 
