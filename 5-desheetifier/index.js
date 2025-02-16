@@ -135,10 +135,17 @@ async function main() {
                     if (nameField) {
                         const actorKey = `Actor/${nameField.value}`;
                         if (actors[actorKey]) {
-                            const displayNameField = actor.fields?.find(f =>
+                            let displayNameField = actor.fields?.find(f =>
                                 f.type === 4 &&
                                 f.title === `Display Name ${process.env.TARGET_LANG}`
                             );
+                            if (!displayNameField) {
+                                // workaround for "Grace"
+                                displayNameField = actor.fields?.find(f =>
+                                    f.type === 0 &&
+                                    f.title === `Display Name ${process.env.TARGET_LANG}`
+                                );
+                            }
                             if (displayNameField) {
                                 const translation = actors[actorKey].translated;
                                 if (translation) {

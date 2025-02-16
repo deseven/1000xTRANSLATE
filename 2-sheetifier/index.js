@@ -117,10 +117,18 @@ jsonFiles.forEach(file => {
                     f.type === 0 &&
                     f.title === "Name"
                 );
-                const nameField = actor.fields?.find(f =>
+                let nameField = actor.fields?.find(f =>
                     f.type === 4 &&
                     f.title === `Display Name ${process.env.BASE_LANG}`
                 );
+                if (keyField && !nameField) {
+                    // special treatment for "Grace"
+                    console.warn('Actor with no localization field, switching to type 0.')
+                    nameField = actor.fields?.find(f =>
+                        f.type === 0 &&
+                        f.title === `Display Name ${process.env.BASE_LANG}`
+                    );
+                }
                 if (keyField && nameField) {
                     fileActors.push({
                         key: keyField.value,
@@ -158,7 +166,7 @@ jsonFiles.forEach(file => {
                             a.id.toString() === actorField.value.toString()
                         );
                         const actorNameField = actor?.fields?.find(f =>
-                            f.type === 4 &&
+                            (f.type === 4 || f.type === 0) &&
                             f.title === `Display Name ${process.env.BASE_LANG}`
                         );
                         actorText = actorNameField?.value;
