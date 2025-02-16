@@ -11,6 +11,6 @@ if [ -s .venv/bin/activate ]; then
 elif [ -d node_modules ] && [ "$(ls -A node_modules)" ]; then
   exit 0
 else
-  echo -e "${RED}ERROR!${NC} Module dependencies are not found, please execute ${GREEN}npm run install${NC} first."
+  echo -e "${RED}ERROR!${NC} Function dependencies are not found, please execute ${GREEN}npm run install${NC} first."
   exit 1
 fi
