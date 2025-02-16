@@ -214,6 +214,10 @@ async function main() {
     const sheets = google.sheets({ version: 'v4', auth });
     const NEW = process.env.SPREADSHEET_ID;
     const OLD = process.env.SV_SPREADSHEET_ID;
+    if (!OLD) {
+        console.error(`SV_SPREADSHEET_ID is not defined.`);
+        process.exit(1);
+    }
 
     // Load all keys from NEW
     console.log('Loading keys from NEW spreadsheet...');

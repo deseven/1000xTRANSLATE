@@ -2,6 +2,7 @@ const dotenv = require('dotenv');
 const fs = require('fs');
 const path = require('path');
 const ThousandXspreadsheeT = require('../tools/ThousandXspreadsheeT');
+const JSONbig = require('json-bigint');
 
 dotenv.config({ path: '../.env' });
 const resDir = path.join(__dirname, '../', process.env.RES_DIR);
@@ -123,7 +124,7 @@ async function main() {
             if (path.basename(file) === 'I2Languages.json') continue;
 
             console.log(`Processing ${file}...`);
-            const data = JSON.parse(fs.readFileSync(file, 'utf-8'));
+            const data = JSONbig.parse(fs.readFileSync(file, 'utf-8'));
 
             // Process Actors
             if (data.actors?.length) {
@@ -248,7 +249,7 @@ async function main() {
                 });
             }
 
-            fs.writeFileSync(file, JSON.stringify(data, null, 2));
+            fs.writeFileSync(file, JSONbig.stringify(data, null, 2));
         }
 
         // Print statistics

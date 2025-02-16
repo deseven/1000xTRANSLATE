@@ -1,5 +1,301 @@
 {
-  "I2.Loc.LanguageSourceAsset": [
+  "__StaticArrayInitTypeSize=24": [
+    {
+      "m_Type": "MonoBehaviour",
+      "m_Name": "Base",
+      "m_MetaFlag": 0,
+      "m_Level": 0
+    },
+    {
+      "m_Type": "PPtr\u003CGameObject\u003E",
+      "m_Name": "m_GameObject",
+      "m_MetaFlag": 0,
+      "m_Level": 1
+    },
+    {
+      "m_Type": "int",
+      "m_Name": "m_FileID",
+      "m_MetaFlag": 0,
+      "m_Level": 2
+    },
+    {
+      "m_Type": "SInt64",
+      "m_Name": "m_PathID",
+      "m_MetaFlag": 0,
+      "m_Level": 2
+    },
+    {
+      "m_Type": "UInt8",
+      "m_Name": "m_Enabled",
+      "m_MetaFlag": 16384,
+      "m_Level": 1
+    },
+    {
+      "m_Type": "PPtr\u003CMonoScript\u003E",
+      "m_Name": "m_Script",
+      "m_MetaFlag": 0,
+      "m_Level": 1
+    },
+    {
+      "m_Type": "int",
+      "m_Name": "m_FileID",
+      "m_MetaFlag": 0,
+      "m_Level": 2
+    },
+    {
+      "m_Type": "SInt64",
+      "m_Name": "m_PathID",
+      "m_MetaFlag": 0,
+      "m_Level": 2
+    },
+    {
+      "m_Type": "string",
+      "m_Name": "m_Name",
+      "m_MetaFlag": 0,
+      "m_Level": 1
+    },
+    {
+      "m_Type": "Array",
+      "m_Name": "Array",
+      "m_MetaFlag": 16384,
+      "m_Level": 2
+    },
+    {
+      "m_Type": "int",
+      "m_Name": "size",
+      "m_MetaFlag": 0,
+      "m_Level": 3
+    },
+    {
+      "m_Type": "char",
+      "m_Name": "data",
+      "m_MetaFlag": 0,
+      "m_Level": 3
+    }
+  ],
+  "_GetParam": [
+    {
+      "m_Type": "MonoBehaviour",
+      "m_Name": "Base",
+      "m_MetaFlag": 0,
+      "m_Level": 0
+    },
+    {
+      "m_Type": "PPtr\u003CGameObject\u003E",
+      "m_Name": "m_GameObject",
+      "m_MetaFlag": 0,
+      "m_Level": 1
+    },
+    {
+      "m_Type": "int",
+      "m_Name": "m_FileID",
+      "m_MetaFlag": 0,
+      "m_Level": 2
+    },
+    {
+      "m_Type": "SInt64",
+      "m_Name": "m_PathID",
+      "m_MetaFlag": 0,
+      "m_Level": 2
+    },
+    {
+      "m_Type": "UInt8",
+      "m_Name": "m_Enabled",
+      "m_MetaFlag": 16384,
+      "m_Level": 1
+    },
+    {
+      "m_Type": "PPtr\u003CMonoScript\u003E",
+      "m_Name": "m_Script",
+      "m_MetaFlag": 0,
+      "m_Level": 1
+    },
+    {
+      "m_Type": "int",
+      "m_Name": "m_FileID",
+      "m_MetaFlag": 0,
+      "m_Level": 2
+    },
+    {
+      "m_Type": "SInt64",
+      "m_Name": "m_PathID",
+      "m_MetaFlag": 0,
+      "m_Level": 2
+    },
+    {
+      "m_Type": "string",
+      "m_Name": "m_Name",
+      "m_MetaFlag": 0,
+      "m_Level": 1
+    },
+    {
+      "m_Type": "Array",
+      "m_Name": "Array",
+      "m_MetaFlag": 16384,
+      "m_Level": 2
+    },
+    {
+      "m_Type": "int",
+      "m_Name": "size",
+      "m_MetaFlag": 0,
+      "m_Level": 3
+    },
+    {
+      "m_Type": "char",
+      "m_Name": "data",
+      "m_MetaFlag": 0,
+      "m_Level": 3
+    }
+  ],
+  "\u003C\u003Ec": [
+    {
+      "m_Type": "MonoBehaviour",
+      "m_Name": "Base",
+      "m_MetaFlag": 0,
+      "m_Level": 0
+    },
+    {
+      "m_Type": "PPtr\u003CGameObject\u003E",
+      "m_Name": "m_GameObject",
+      "m_MetaFlag": 0,
+      "m_Level": 1
+    },
+    {
+      "m_Type": "int",
+      "m_Name": "m_FileID",
+      "m_MetaFlag": 0,
+      "m_Level": 2
+    },
+    {
+      "m_Type": "SInt64",
+      "m_Name": "m_PathID",
+      "m_MetaFlag": 0,
+      "m_Level": 2
+    },
+    {
+      "m_Type": "UInt8",
+      "m_Name": "m_Enabled",
+      "m_MetaFlag": 16384,
+      "m_Level": 1
+    },
+    {
+      "m_Type": "PPtr\u003CMonoScript\u003E",
+      "m_Name": "m_Script",
+      "m_MetaFlag": 0,
+      "m_Level": 1
+    },
+    {
+      "m_Type": "int",
+      "m_Name": "m_FileID",
+      "m_MetaFlag": 0,
+      "m_Level": 2
+    },
+    {
+      "m_Type": "SInt64",
+      "m_Name": "m_PathID",
+      "m_MetaFlag": 0,
+      "m_Level": 2
+    },
+    {
+      "m_Type": "string",
+      "m_Name": "m_Name",
+      "m_MetaFlag": 0,
+      "m_Level": 1
+    },
+    {
+      "m_Type": "Array",
+      "m_Name": "Array",
+      "m_MetaFlag": 16384,
+      "m_Level": 2
+    },
+    {
+      "m_Type": "int",
+      "m_Name": "size",
+      "m_MetaFlag": 0,
+      "m_Level": 3
+    },
+    {
+      "m_Type": "char",
+      "m_Name": "data",
+      "m_MetaFlag": 0,
+      "m_Level": 3
+    }
+  ],
+  "\u003C\u003Ec__DisplayClass12_0": [
+    {
+      "m_Type": "MonoBehaviour",
+      "m_Name": "Base",
+      "m_MetaFlag": 0,
+      "m_Level": 0
+    },
+    {
+      "m_Type": "PPtr\u003CGameObject\u003E",
+      "m_Name": "m_GameObject",
+      "m_MetaFlag": 0,
+      "m_Level": 1
+    },
+    {
+      "m_Type": "int",
+      "m_Name": "m_FileID",
+      "m_MetaFlag": 0,
+      "m_Level": 2
+    },
+    {
+      "m_Type": "SInt64",
+      "m_Name": "m_PathID",
+      "m_MetaFlag": 0,
+      "m_Level": 2
+    },
+    {
+      "m_Type": "UInt8",
+      "m_Name": "m_Enabled",
+      "m_MetaFlag": 16384,
+      "m_Level": 1
+    },
+    {
+      "m_Type": "PPtr\u003CMonoScript\u003E",
+      "m_Name": "m_Script",
+      "m_MetaFlag": 0,
+      "m_Level": 1
+    },
+    {
+      "m_Type": "int",
+      "m_Name": "m_FileID",
+      "m_MetaFlag": 0,
+      "m_Level": 2
+    },
+    {
+      "m_Type": "SInt64",
+      "m_Name": "m_PathID",
+      "m_MetaFlag": 0,
+      "m_Level": 2
+    },
+    {
+      "m_Type": "string",
+      "m_Name": "m_Name",
+      "m_MetaFlag": 0,
+      "m_Level": 1
+    },
+    {
+      "m_Type": "Array",
+      "m_Name": "Array",
+      "m_MetaFlag": 16384,
+      "m_Level": 2
+    },
+    {
+      "m_Type": "int",
+      "m_Name": "size",
+      "m_MetaFlag": 0,
+      "m_Level": 3
+    },
+    {
+      "m_Type": "char",
+      "m_Name": "data",
+      "m_MetaFlag": 0,
+      "m_Level": 3
+    }
+  ],
+  "\u003C\u003Ec__DisplayClass2_0": [
     {
       "m_Type": "MonoBehaviour",
       "m_Name": "Base",
@@ -73,474 +369,177 @@
       "m_Level": 3
     },
     {
-      "m_Type": "LanguageSourceData",
-      "m_Name": "mSource",
+      "m_Type": "string",
+      "m_Name": "text",
       "m_MetaFlag": 0,
       "m_Level": 1
     },
     {
-      "m_Type": "bool",
-      "m_Name": "UserAgreesToHaveItOnTheScene",
-      "m_MetaFlag": 16384,
-      "m_Level": 2
-    },
-    {
-      "m_Type": "bool",
-      "m_Name": "UserAgreesToHaveItInsideThePluginsFolder",
-      "m_MetaFlag": 16384,
-      "m_Level": 2
-    },
-    {
-      "m_Type": "bool",
-      "m_Name": "GoogleLiveSyncIsUptoDate",
-      "m_MetaFlag": 16384,
-      "m_Level": 2
-    },
-    {
-      "m_Type": "List\u00601",
-      "m_Name": "mTerms",
-      "m_MetaFlag": 0,
-      "m_Level": 2
-    },
-    {
       "m_Type": "Array",
       "m_Name": "Array",
+      "m_MetaFlag": 16384,
+      "m_Level": 2
+    },
+    {
+      "m_Type": "int",
+      "m_Name": "size",
       "m_MetaFlag": 0,
       "m_Level": 3
     },
     {
-      "m_Type": "int",
-      "m_Name": "size",
-      "m_MetaFlag": 0,
-      "m_Level": 4
-    },
-    {
-      "m_Type": "TermData",
-      "m_Name": "data",
-      "m_MetaFlag": 0,
-      "m_Level": 4
-    },
-    {
-      "m_Type": "string",
-      "m_Name": "Term",
-      "m_MetaFlag": 0,
-      "m_Level": 5
-    },
-    {
-      "m_Type": "Array",
-      "m_Name": "Array",
-      "m_MetaFlag": 16384,
-      "m_Level": 6
-    },
-    {
-      "m_Type": "int",
-      "m_Name": "size",
-      "m_MetaFlag": 0,
-      "m_Level": 7
-    },
-    {
       "m_Type": "char",
       "m_Name": "data",
-      "m_MetaFlag": 0,
-      "m_Level": 7
-    },
-    {
-      "m_Type": "SInt32",
-      "m_Name": "TermType",
-      "m_MetaFlag": 0,
-      "m_Level": 5
-    },
-    {
-      "m_Type": "String[]",
-      "m_Name": "Languages",
-      "m_MetaFlag": 0,
-      "m_Level": 5
-    },
-    {
-      "m_Type": "Array",
-      "m_Name": "Array",
-      "m_MetaFlag": 0,
-      "m_Level": 6
-    },
-    {
-      "m_Type": "int",
-      "m_Name": "size",
-      "m_MetaFlag": 0,
-      "m_Level": 7
-    },
-    {
-      "m_Type": "string",
-      "m_Name": "data",
-      "m_MetaFlag": 0,
-      "m_Level": 7
-    },
-    {
-      "m_Type": "Array",
-      "m_Name": "Array",
-      "m_MetaFlag": 16384,
-      "m_Level": 8
-    },
-    {
-      "m_Type": "int",
-      "m_Name": "size",
-      "m_MetaFlag": 0,
-      "m_Level": 9
-    },
-    {
-      "m_Type": "char",
-      "m_Name": "data",
-      "m_MetaFlag": 0,
-      "m_Level": 9
-    },
-    {
-      "m_Type": "Byte[]",
-      "m_Name": "Flags",
-      "m_MetaFlag": 16384,
-      "m_Level": 5
-    },
-    {
-      "m_Type": "Array",
-      "m_Name": "Array",
-      "m_MetaFlag": 0,
-      "m_Level": 6
-    },
-    {
-      "m_Type": "int",
-      "m_Name": "size",
-      "m_MetaFlag": 0,
-      "m_Level": 7
-    },
-    {
-      "m_Type": "UInt8",
-      "m_Name": "data",
-      "m_MetaFlag": 0,
-      "m_Level": 7
-    },
-    {
-      "m_Type": "String[]",
-      "m_Name": "Languages_Touch",
-      "m_MetaFlag": 0,
-      "m_Level": 5
-    },
-    {
-      "m_Type": "Array",
-      "m_Name": "Array",
-      "m_MetaFlag": 0,
-      "m_Level": 6
-    },
-    {
-      "m_Type": "int",
-      "m_Name": "size",
-      "m_MetaFlag": 0,
-      "m_Level": 7
-    },
-    {
-      "m_Type": "string",
-      "m_Name": "data",
-      "m_MetaFlag": 0,
-      "m_Level": 7
-    },
-    {
-      "m_Type": "Array",
-      "m_Name": "Array",
-      "m_MetaFlag": 16384,
-      "m_Level": 8
-    },
-    {
-      "m_Type": "int",
-      "m_Name": "size",
-      "m_MetaFlag": 0,
-      "m_Level": 9
-    },
-    {
-      "m_Type": "char",
-      "m_Name": "data",
-      "m_MetaFlag": 0,
-      "m_Level": 9
-    },
-    {
-      "m_Type": "bool",
-      "m_Name": "CaseInsensitiveTerms",
-      "m_MetaFlag": 16384,
-      "m_Level": 2
-    },
-    {
-      "m_Type": "SInt32",
-      "m_Name": "OnMissingTranslation",
-      "m_MetaFlag": 0,
-      "m_Level": 2
-    },
-    {
-      "m_Type": "string",
-      "m_Name": "mTerm_AppName",
-      "m_MetaFlag": 0,
-      "m_Level": 2
-    },
-    {
-      "m_Type": "Array",
-      "m_Name": "Array",
-      "m_MetaFlag": 16384,
-      "m_Level": 3
-    },
-    {
-      "m_Type": "int",
-      "m_Name": "size",
-      "m_MetaFlag": 0,
-      "m_Level": 4
-    },
-    {
-      "m_Type": "char",
-      "m_Name": "data",
-      "m_MetaFlag": 0,
-      "m_Level": 4
-    },
-    {
-      "m_Type": "List\u00601",
-      "m_Name": "mLanguages",
-      "m_MetaFlag": 0,
-      "m_Level": 2
-    },
-    {
-      "m_Type": "Array",
-      "m_Name": "Array",
       "m_MetaFlag": 0,
       "m_Level": 3
     },
     {
-      "m_Type": "int",
-      "m_Name": "size",
-      "m_MetaFlag": 0,
-      "m_Level": 4
-    },
-    {
-      "m_Type": "LanguageData",
-      "m_Name": "data",
-      "m_MetaFlag": 0,
-      "m_Level": 4
-    },
-    {
       "m_Type": "string",
-      "m_Name": "Name",
+      "m_Name": "LanguageCodeTo",
       "m_MetaFlag": 0,
-      "m_Level": 5
+      "m_Level": 1
     },
     {
       "m_Type": "Array",
       "m_Name": "Array",
       "m_MetaFlag": 16384,
-      "m_Level": 6
+      "m_Level": 2
     },
     {
       "m_Type": "int",
       "m_Name": "size",
-      "m_MetaFlag": 0,
-      "m_Level": 7
-    },
-    {
-      "m_Type": "char",
-      "m_Name": "data",
-      "m_MetaFlag": 0,
-      "m_Level": 7
-    },
-    {
-      "m_Type": "string",
-      "m_Name": "Code",
-      "m_MetaFlag": 0,
-      "m_Level": 5
-    },
-    {
-      "m_Type": "Array",
-      "m_Name": "Array",
-      "m_MetaFlag": 16384,
-      "m_Level": 6
-    },
-    {
-      "m_Type": "int",
-      "m_Name": "size",
-      "m_MetaFlag": 0,
-      "m_Level": 7
-    },
-    {
-      "m_Type": "char",
-      "m_Name": "data",
-      "m_MetaFlag": 0,
-      "m_Level": 7
-    },
-    {
-      "m_Type": "UInt8",
-      "m_Name": "Flags",
-      "m_MetaFlag": 16384,
-      "m_Level": 5
-    },
-    {
-      "m_Type": "bool",
-      "m_Name": "IgnoreDeviceLanguage",
-      "m_MetaFlag": 16384,
-      "m_Level": 2
-    },
-    {
-      "m_Type": "SInt32",
-      "m_Name": "_AllowUnloadingLanguages",
-      "m_MetaFlag": 0,
-      "m_Level": 2
-    },
-    {
-      "m_Type": "string",
-      "m_Name": "Google_WebServiceURL",
-      "m_MetaFlag": 0,
-      "m_Level": 2
-    },
-    {
-      "m_Type": "Array",
-      "m_Name": "Array",
-      "m_MetaFlag": 16384,
-      "m_Level": 3
-    },
-    {
-      "m_Type": "int",
-      "m_Name": "size",
-      "m_MetaFlag": 0,
-      "m_Level": 4
-    },
-    {
-      "m_Type": "char",
-      "m_Name": "data",
-      "m_MetaFlag": 0,
-      "m_Level": 4
-    },
-    {
-      "m_Type": "string",
-      "m_Name": "Google_SpreadsheetKey",
-      "m_MetaFlag": 0,
-      "m_Level": 2
-    },
-    {
-      "m_Type": "Array",
-      "m_Name": "Array",
-      "m_MetaFlag": 16384,
-      "m_Level": 3
-    },
-    {
-      "m_Type": "int",
-      "m_Name": "size",
-      "m_MetaFlag": 0,
-      "m_Level": 4
-    },
-    {
-      "m_Type": "char",
-      "m_Name": "data",
-      "m_MetaFlag": 0,
-      "m_Level": 4
-    },
-    {
-      "m_Type": "string",
-      "m_Name": "Google_SpreadsheetName",
-      "m_MetaFlag": 0,
-      "m_Level": 2
-    },
-    {
-      "m_Type": "Array",
-      "m_Name": "Array",
-      "m_MetaFlag": 16384,
-      "m_Level": 3
-    },
-    {
-      "m_Type": "int",
-      "m_Name": "size",
-      "m_MetaFlag": 0,
-      "m_Level": 4
-    },
-    {
-      "m_Type": "char",
-      "m_Name": "data",
-      "m_MetaFlag": 0,
-      "m_Level": 4
-    },
-    {
-      "m_Type": "string",
-      "m_Name": "Google_LastUpdatedVersion",
-      "m_MetaFlag": 0,
-      "m_Level": 2
-    },
-    {
-      "m_Type": "Array",
-      "m_Name": "Array",
-      "m_MetaFlag": 16384,
-      "m_Level": 3
-    },
-    {
-      "m_Type": "int",
-      "m_Name": "size",
-      "m_MetaFlag": 0,
-      "m_Level": 4
-    },
-    {
-      "m_Type": "char",
-      "m_Name": "data",
-      "m_MetaFlag": 0,
-      "m_Level": 4
-    },
-    {
-      "m_Type": "SInt32",
-      "m_Name": "GoogleUpdateFrequency",
-      "m_MetaFlag": 0,
-      "m_Level": 2
-    },
-    {
-      "m_Type": "SInt32",
-      "m_Name": "GoogleInEditorCheckFrequency",
-      "m_MetaFlag": 0,
-      "m_Level": 2
-    },
-    {
-      "m_Type": "SInt32",
-      "m_Name": "GoogleUpdateSynchronization",
-      "m_MetaFlag": 0,
-      "m_Level": 2
-    },
-    {
-      "m_Type": "float",
-      "m_Name": "GoogleUpdateDelay",
-      "m_MetaFlag": 0,
-      "m_Level": 2
-    },
-    {
-      "m_Type": "List\u00601",
-      "m_Name": "Assets",
-      "m_MetaFlag": 0,
-      "m_Level": 2
-    },
-    {
-      "m_Type": "Array",
-      "m_Name": "Array",
       "m_MetaFlag": 0,
       "m_Level": 3
     },
     {
-      "m_Type": "int",
-      "m_Name": "size",
-      "m_MetaFlag": 0,
-      "m_Level": 4
-    },
-    {
-      "m_Type": "PPtr\u003CObject\u003E",
+      "m_Type": "char",
       "m_Name": "data",
       "m_MetaFlag": 0,
-      "m_Level": 4
+      "m_Level": 3
+    }
+  ],
+  "\u003C\u003Ec__DisplayClass34_0": [
+    {
+      "m_Type": "MonoBehaviour",
+      "m_Name": "Base",
+      "m_MetaFlag": 0,
+      "m_Level": 0
+    },
+    {
+      "m_Type": "PPtr\u003CGameObject\u003E",
+      "m_Name": "m_GameObject",
+      "m_MetaFlag": 0,
+      "m_Level": 1
     },
     {
       "m_Type": "int",
       "m_Name": "m_FileID",
       "m_MetaFlag": 0,
-      "m_Level": 5
+      "m_Level": 2
     },
     {
       "m_Type": "SInt64",
       "m_Name": "m_PathID",
       "m_MetaFlag": 0,
+      "m_Level": 2
+    },
+    {
+      "m_Type": "UInt8",
+      "m_Name": "m_Enabled",
+      "m_MetaFlag": 16384,
+      "m_Level": 1
+    },
+    {
+      "m_Type": "PPtr\u003CMonoScript\u003E",
+      "m_Name": "m_Script",
+      "m_MetaFlag": 0,
+      "m_Level": 1
+    },
+    {
+      "m_Type": "int",
+      "m_Name": "m_FileID",
+      "m_MetaFlag": 0,
+      "m_Level": 2
+    },
+    {
+      "m_Type": "SInt64",
+      "m_Name": "m_PathID",
+      "m_MetaFlag": 0,
+      "m_Level": 2
+    },
+    {
+      "m_Type": "string",
+      "m_Name": "m_Name",
+      "m_MetaFlag": 0,
+      "m_Level": 1
+    },
+    {
+      "m_Type": "Array",
+      "m_Name": "Array",
+      "m_MetaFlag": 16384,
+      "m_Level": 2
+    },
+    {
+      "m_Type": "int",
+      "m_Name": "size",
+      "m_MetaFlag": 0,
+      "m_Level": 3
+    },
+    {
+      "m_Type": "char",
+      "m_Name": "data",
+      "m_MetaFlag": 0,
+      "m_Level": 3
+    },
+    {
+      "m_Type": "List\u00601",
+      "m_Name": "Languages",
+      "m_MetaFlag": 0,
+      "m_Level": 1
+    },
+    {
+      "m_Type": "Array",
+      "m_Name": "Array",
+      "m_MetaFlag": 0,
+      "m_Level": 2
+    },
+    {
+      "m_Type": "int",
+      "m_Name": "size",
+      "m_MetaFlag": 0,
+      "m_Level": 3
+    },
+    {
+      "m_Type": "string",
+      "m_Name": "data",
+      "m_MetaFlag": 0,
+      "m_Level": 3
+    },
+    {
+      "m_Type": "Array",
+      "m_Name": "Array",
+      "m_MetaFlag": 16384,
+      "m_Level": 4
+    },
+    {
+      "m_Type": "int",
+      "m_Name": "size",
+      "m_MetaFlag": 0,
       "m_Level": 5
     },
-    {"m_Level": 0},
+    {
+      "m_Type": "char",
+      "m_Name": "data",
+      "m_MetaFlag": 0,
+      "m_Level": 5
+    }
+  ],
+  "\u003C\u003Ec__DisplayClass35_0": [
+    {
+      "m_Type": "MonoBehaviour",
+      "m_Name": "Base",
+      "m_MetaFlag": 0,
+      "m_Level": 0
+    },
     {
       "m_Type": "PPtr\u003CGameObject\u003E",
       "m_Name": "m_GameObject",

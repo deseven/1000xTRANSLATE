@@ -9,6 +9,7 @@
   "author": "deseven",
   "license": "ISC",
   "dependencies": {
-    "dotenv": "^16.4.7"
+    "dotenv": "^16.4.7",
+    "json-bigint": "^1.0.0"
   }
 }

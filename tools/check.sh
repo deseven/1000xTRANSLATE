@@ -14,23 +14,24 @@ dependencies=(
 
 # Variables to check for (var:severity:function:error)
 variables=(
-    "SPREADSHEET_ID          :CRITICAL :                          :"
-    "GOOGLE_CREDENTIALS_FILE :CRITICAL :file_exists_and_not_empty :file does not exist or is empty."
-    "VOCAB_CHARS_SHEET_NAME  :CRITICAL :                          :"
-    "VOCAB_TERMS_SHEET_NAME  :CRITICAL :                          :"
-    "SYSTEM_SHEET_NAME       :CRITICAL :                          :"
-    "ACTORS_SHEET_NAME       :CRITICAL :                          :"
-    "QUESTS_SHEET_NAME       :CRITICAL :                          :"
-    "DIALOGUES_SHEET_NAME    :CRITICAL :                          :"
-    "GAME_DATA_DIR           :CRITICAL :dir_exists_and_not_empty  :directory does not exist or is empty."
-    "GAME_UNITY_VERSION      :CRITICAL :                          :"
-    "RES_DIR                 :CRITICAL :valid_dir_or_creatable    :is not a valid directory or cannot be created."
-    "OUT_DIR                 :CRITICAL :valid_dir_or_creatable    :is not a valid directory or cannot be created."
-    "BASE_LANG               :CRITICAL :check_lang_code           :is not a valid 2-symbol [a-z] code."
-    "TARGET_LANG             :CRITICAL :check_lang_code           :is not a valid 2-symbol [a-z] code."
-    "OPENAI_API_ENDPOINT     :WARNING  :check_starts_with_http    :does not start with 'http'."
-    "OPENAI_API_KEY          :WARNING  :                          :"
-    "OPENAI_MODEL            :WARNING  :                          :"
+    "SPREADSHEET_ID            :CRITICAL :                          :"
+    "GOOGLE_CREDENTIALS_FILE   :CRITICAL :file_exists_and_not_empty :file does not exist or is empty."
+    "VOCAB_CHARS_SHEET_NAME    :CRITICAL :                          :"
+    "VOCAB_TERMS_SHEET_NAME    :CRITICAL :                          :"
+    "SYSTEM_SHEET_NAME         :CRITICAL :                          :"
+    "ACTORS_SHEET_NAME         :CRITICAL :                          :"
+    "QUESTS_SHEET_NAME         :CRITICAL :                          :"
+    "DIALOGUES_SHEET_NAME      :CRITICAL :                          :"
+    "GAME_DATA_DIR             :CRITICAL :dir_exists_and_not_empty  :directory does not exist or is empty."
+    "GAME_UNITY_VERSION        :CRITICAL :                          :"
+    "UNITYPY_USE_PYTHON_PARSER :WARNING  :equals_to_true_or_false   :does not equal to \'true\' or \'false\'."
+    "RES_DIR                   :CRITICAL :valid_dir_or_creatable    :is not a valid directory or cannot be created."
+    "OUT_DIR                   :CRITICAL :valid_dir_or_creatable    :is not a valid directory or cannot be created."
+    "BASE_LANG                 :CRITICAL :check_lang_code           :is not a valid 2-symbol [a-z] code."
+    "TARGET_LANG               :CRITICAL :check_lang_code           :is not a valid 2-symbol [a-z] code."
+    "OPENAI_API_ENDPOINT       :WARNING  :check_starts_with_http    :does not start with 'http'."
+    "OPENAI_API_KEY            :WARNING  :                          :"
+    "OPENAI_MODEL              :WARNING  :                          :"
 )
 
 # Check functions
@@ -60,6 +61,10 @@ check_lang_code() {
 
 check_starts_with_http() {
     [[ "$1" =~ ^http ]]
+}
+
+equals_to_true_or_false() {
+    [[ "$1" =~ ^(true|false)$ ]]
 }
 
 # Load .env file
