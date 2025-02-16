@@ -1,5 +1,5 @@
 # 1000xTRANSLATE
-A full toolset that will help you to translate [1000xRESIST](https://store.steampowered.com/app/1675830/1000xRESIST/) to your favourite language. Work in progress, the first major milestone is to be able to export, parse, translate and import all visible text data.
+A full toolset that will help you to translate [1000xRESIST](https://store.steampowered.com/app/1675830/1000xRESIST/) to your favourite language. Work in progress.
 
 
 ## The Idea
@@ -8,6 +8,14 @@ The toolset is intended to be used in the following way:
 2. Toolset uploads all strings into a pre-defined [Google Sheets document](https://docs.google.com/spreadsheets/d/10KcHa_iS_RSgsVauCDe6EKbskN4iZfaT9PPjdGJk--4/edit?usp=sharing).
 3. You translate all game text in Google Sheets, with optional help of LLMs.
 4. Toolset pulls all translated strings and builds a ready to use distribution package with localization.
+
+
+## Roadmap
+ - ~~be able to export, parse, translate and import all visible text data~~
+ - translator/checker
+ - fonts patching
+ - general polishing & documentation
+ - texture and other resources overrides (?)
 
 
 ## Functions
