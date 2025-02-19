@@ -7,7 +7,7 @@
 4. Copy `.env.example` to `.env` and edit it, following the comments. As a bare minimum, you should define `SPREADSHEET_ID`, `GOOGLE_CREDENTIALS_FILE` (see below) and `GAME_DATA_DIR`.
 5. Run `npm install` to install wrapper script dependencies.
 6. Run `npm run init` to install all needed internal dependencies.
-7. Run `npm run check` to see if anything is wrong.
+7. (optional) Run `npm run check` to see if anything is wrong.
 
 ## Windows
 1. Run Power Shell from Start Menu or in Windows Terminal.
@@ -20,8 +20,8 @@
 8. Edit `.env` file in any text editor, following the comments in it. As a bare minimum, you should define `SPREADSHEET_ID`, `GOOGLE_CREDENTIALS_FILE` (see below) and `GAME_DATA_DIR` (for example `C:\Steam\steamapps\common\1000xRESIST\1000xRESIST_Data`).
 9. Run `npm install` to install wrapper script dependencies.
 10. Run `npm run init` to install all needed internal dependencies.
-11. Run `npm run check` to see if anything is wrong.
-12. To make the usage easier, you can also create a shortcut to `1000xTRANSLATE.bat` on your desktop, it's a simple script that will prompt you to pick from a predefined set of 
+11. (optional) Run `npm run check` to see if anything is wrong.
+12. (optional) To make the usage easier, you can also create a shortcut to `1000xTRANSLATE.bat` on your desktop, it's a simple script that will prompt you to pick from a predefined set of commands.
 
 ## Prepare Google Sheets document
  - Copy [Google Sheets document](https://docs.google.com/spreadsheets/d/10KcHa_iS_RSgsVauCDe6EKbskN4iZfaT9PPjdGJk--4/edit?usp=sharing) under your name.
