@@ -21,13 +21,13 @@ if os.getenv('UNITYPY_USE_PYTHON_PARSER') == 'true':
     from UnityPy.helpers import TypeTreeHelper
     TypeTreeHelper.read_typetree_boost = False
 
-with open(os.path.join('../..', 'data', 'bundles.list'), 'r') as f:
+with open(os.path.join('../..', 'data', 'bundles.list'), 'r', encoding='utf-8') as f:
     bundles = [line.strip() for line in f.readlines()]
 
-with open(os.path.join('../..', 'data', 'I2.loc.typetree.json'), 'r') as f:
+with open(os.path.join('../..', 'data', 'I2.loc.typetree.json'), 'r', encoding='utf-8') as f:
     I2LocTypetree = json.load(f)
 
-with open(os.path.join(res_dir, 'I2Languages.json'), 'r') as f:
+with open(os.path.join(res_dir, 'I2Languages.json'), 'r', encoding='utf-8') as f:
     I2Languages = json.load(f)
 
 file_path = os.path.join(data_dir, 'resources.assets')
