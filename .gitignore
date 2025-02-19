@@ -11,6 +11,7 @@ node_modules/
 .env
 .venv
 !package.json
+!requirements.txt
 !data/chapter-definitions.json
 !data/I2.loc.typetree.json
 *.assets

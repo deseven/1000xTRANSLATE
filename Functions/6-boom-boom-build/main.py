@@ -3,7 +3,7 @@ import json
 import UnityPy
 from dotenv import load_dotenv
 
-load_dotenv('../.env')
+load_dotenv('../../.env')
 UnityPy.config.FALLBACK_UNITY_VERSION = os.getenv('GAME_UNITY_VERSION')
 
 # Handle both relative and absolute paths
@@ -11,7 +11,7 @@ def get_path(env_var):
     path = os.getenv(env_var)
     if os.path.isabs(path):
         return path
-    return os.path.join('..', path)
+    return os.path.join('../..', path)
 
 data_dir = get_path('GAME_DATA_DIR')
 res_dir = get_path('RES_DIR')
@@ -21,10 +21,10 @@ if os.getenv('UNITYPY_USE_PYTHON_PARSER') == 'true':
     from UnityPy.helpers import TypeTreeHelper
     TypeTreeHelper.read_typetree_boost = False
 
-with open(os.path.join('..', 'data', 'bundles.list'), 'r') as f:
+with open(os.path.join('../..', 'data', 'bundles.list'), 'r') as f:
     bundles = [line.strip() for line in f.readlines()]
 
-with open(os.path.join('..', 'data', 'I2.loc.typetree.json'), 'r') as f:
+with open(os.path.join('../..', 'data', 'I2.loc.typetree.json'), 'r') as f:
     I2LocTypetree = json.load(f)
 
 with open(os.path.join(res_dir, 'I2Languages.json'), 'r') as f:

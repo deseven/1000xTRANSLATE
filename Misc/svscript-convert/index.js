@@ -1,4 +1,4 @@
-require('dotenv').config({ path: '../../.env' });
+require('dotenv').config({ path: '.env' });
 const { google } = require('googleapis');
 const fs = require('fs');
 const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
@@ -30,7 +30,7 @@ async function withRetry(operation, maxRetries = 50, initialDelay = 1000) {
 
 async function getAuthClient() {
     const credentials = JSON.parse(
-        fs.readFileSync('../../' + process.env.GOOGLE_CREDENTIALS_FILE, 'utf8')
+        fs.readFileSync(process.env.GOOGLE_CREDENTIALS_FILE, 'utf8')
     );
 
     return new google.auth.GoogleAuth({

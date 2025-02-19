@@ -4,24 +4,22 @@
   "description": "A collection of tools to translate 1000xRESIST into your language",
   "main": "index.js",
   "scripts": {
-    "clean": "tools/clean.sh",
-    "check": "tools/check.sh",
-    "install:exporter": "cd 1-exporter && ../tools/python-prepare.sh",
-    "install:sheetifier": "cd 2-sheetifier && npm install",
-    "install:translator": "cd 3-translator && npm install",
-    "install:checker": "cd 4-checker",
-    "install:desheetifier": "cd 5-desheetifier && npm install",
-    "install:bbb": "cd 6-boom-boom-build && ../tools/python-prepare.sh",
-    "install:tools": "cd tools/ThousandXSpreadSheet && npm install && cd ../svscript-convert && npm install",
-    "tool:svscript-convert": "npm run check && cd tools/svscript-convert && ../check-function.sh && node index.js",
-    "function:exporter": "npm run check && cd 1-exporter && ../tools/check-function.sh && source .venv/bin/activate && python3 main.py",
-    "function:sheetifier": "npm run check && cd 2-sheetifier && ../tools/check-function.sh && node index.js",
-    "function:desheetifier": "npm run check && cd 5-desheetifier && ../tools/check-function.sh && node index.js",
-    "function:bbb": "npm run check && cd 6-boom-boom-build && ../tools/check-function.sh && source .venv/bin/activate && python3 main.py",
-    "install": "npm run install:tools && npm run install:exporter && npm run install:sheetifier && npm run install:translator && npm run install:checker && npm run install:desheetifier && npm run install:bbb",
-    "init": "npm run function:exporter && npm run function:sheetifier",
-    "build": "npm run function:desheetifier && npm run function:bbb"
+    "clean": "node index.js clean",
+    "check": "node index.js check",
+    "tool:svscript-convert": "node index.js run:tool svscript-convert",
+    "function:exporter": "node index.js run:function 1-exporter",
+    "function:sheetifier": "node index.js run:function 2-sheetifier",
+    "function:desheetifier": "node index.js run:function 5-desheetifier",
+    "function:bbb": "node index.js run:function 6-boom-boom-build",
+    "init": "node index.js install:all",
+    "dump": "node index.js run:function 1-exporter 2-sheetifier",
+    "build": "node index.js run:function 5-desheetifier 6-boom-boom-build"
   },
   "author": "deseven",
-  "license": "ISC"
+  "license": "ISC",
+  "type": "module",
+  "dependencies": {
+    "chalk": "^5.4.1",
+    "dotenv": "^16.4.7"
+  }
 }

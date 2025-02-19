@@ -3,23 +3,23 @@ import json
 import UnityPy
 from dotenv import load_dotenv
 
-load_dotenv(os.path.join(os.path.dirname(__file__), '../.env'))
+load_dotenv(os.path.join(os.path.dirname(__file__), '../../.env'))
 UnityPy.config.FALLBACK_UNITY_VERSION = os.getenv('GAME_UNITY_VERSION')
 data_dir = os.getenv('GAME_DATA_DIR')
 if not os.path.isabs(data_dir):
-    data_dir = os.path.join(os.path.dirname(__file__), '..', data_dir)
+    data_dir = os.path.join(os.path.dirname(__file__), '../..', data_dir)
 res_dir = os.getenv('RES_DIR')
 if not os.path.isabs(res_dir):
-    res_dir = os.path.join(os.path.dirname(__file__), '..', res_dir)
+    res_dir = os.path.join(os.path.dirname(__file__), '../..', res_dir)
 
 if os.getenv('UNITYPY_USE_PYTHON_PARSER') == 'true':
     from UnityPy.helpers import TypeTreeHelper
     TypeTreeHelper.read_typetree_boost = False
 
-with open(os.path.join(os.path.dirname(__file__), '../data/bundles.list'), 'r') as f:
+with open(os.path.join(os.path.dirname(__file__), '../../data/bundles.list'), 'r') as f:
     bundles = [line.strip() for line in f.readlines()]
 
-with open(os.path.join(os.path.dirname(__file__), '../data/I2.loc.typetree.json'), 'r') as f:
+with open(os.path.join(os.path.dirname(__file__), '../../data/I2.loc.typetree.json'), 'r') as f:
     I2LocTypetree = json.load(f)
 
 file_path = os.path.join(data_dir, 'resources.assets')

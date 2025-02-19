@@ -1,11 +1,11 @@
 const dotenv = require('dotenv');
 const fs = require('fs');
 const path = require('path');
-const ThousandXspreadsheeT = require('../tools/ThousandXspreadsheeT');
+const ThousandXspreadsheeT = require('../../Misc/ThousandXspreadsheeT');
 const JSONbig = require('json-bigint');
 
-dotenv.config({ path: path.join(__dirname, '../.env') });
-const resDir = path.isAbsolute(process.env.RES_DIR) ? process.env.RES_DIR : path.join(__dirname, '../', process.env.RES_DIR);
+dotenv.config({ path: '.env' });
+const resDir = path.isAbsolute(process.env.RES_DIR) ? process.env.RES_DIR : path.join(__dirname, '../../', process.env.RES_DIR);
 
 const lang_bind = {
     en: 0,
@@ -59,7 +59,7 @@ function getAllJsonFiles(dir, files = []) {
 async function main() {
     try {
         const spreadsheet = new ThousandXspreadsheeT({
-            GOOGLE_CREDENTIALS_FILE: path.join(__dirname, '../', process.env.GOOGLE_CREDENTIALS_FILE),
+            GOOGLE_CREDENTIALS_FILE: path.join(__dirname, '../../', process.env.GOOGLE_CREDENTIALS_FILE),
             SPREADSHEET_ID: process.env.SPREADSHEET_ID,
             ACTORS_SHEET_NAME: process.env.ACTORS_SHEET_NAME,
             QUESTS_SHEET_NAME: process.env.QUESTS_SHEET_NAME,
