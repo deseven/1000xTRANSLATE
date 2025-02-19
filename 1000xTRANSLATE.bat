@@ -4,7 +4,7 @@ cls
 echo Please select an option:
 echo 1. Dump game resources
 echo 2. Build translation
-echo 3. Clean everything up
+echo 3. Clean up extracted and modified resources
 echo 4. Install internal dependencies
 echo 5. Check config file
 echo 6. Exit

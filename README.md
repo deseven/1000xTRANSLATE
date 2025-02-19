@@ -61,6 +61,7 @@ See [INSTALL.md](INSTALL.md).
 ## Usage
  - Run `npm run dump` to export what we need from the game, parse it an upload to the Google Sheets document. Don't be afraid to re-run it, it won't overwrite your translation.
  - Run `npm run build` to download current translation from the Google Sheet document and import it to the game files. Repeat every time you want to test your translation.
+ - Run `npm run clean` to clean up extracted and modified resources.
  - See `npm run` for more commands (for advanced users).
 
 

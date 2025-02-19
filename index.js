@@ -129,7 +129,7 @@ async function checkEnvironment() {
     console.log();
 }
 
-async function cleanup() {
+async function cleanup(all = false) {
     console.log(chalk.blue('Starting cleanup...'));
 
     // Remove RES_DIR and OUT_DIR
@@ -140,53 +140,55 @@ async function cleanup() {
         }
     }
 
-    // Process numbered folders under Functions directory
-    const functionsDir = path.join(process.cwd(), 'Functions');
-    if (fs.existsSync(functionsDir)) {
-        console.log('Processing Functions directory...');
-        const entries = fs.readdirSync(functionsDir);
+    if (all) {
+        // Process numbered folders under Functions directory
+        const functionsDir = path.join(process.cwd(), 'Functions');
+        if (fs.existsSync(functionsDir)) {
+            console.log('Processing Functions directory...');
+            const entries = fs.readdirSync(functionsDir);
 
-        for (const entry of entries) {
-            const fullPath = path.join(functionsDir, entry);
-            if (fs.statSync(fullPath).isDirectory() && /^\d+-/.test(entry)) {
-                console.log(`Processing Function directory: ${entry}`);
+            for (const entry of entries) {
+                const fullPath = path.join(functionsDir, entry);
+                if (fs.statSync(fullPath).isDirectory() && /^\d+-/.test(entry)) {
+                    console.log(`Processing Function directory: ${entry}`);
 
-                // Clean up specific paths in each numbered directory
-                const pathsToRemove = [
-                    path.join(fullPath, '.venv'),
-                    path.join(fullPath, 'node_modules'),
-                    path.join(fullPath, 'package-lock.json')
-                ];
+                    // Clean up specific paths in each numbered directory
+                    const pathsToRemove = [
+                        path.join(fullPath, '.venv'),
+                        path.join(fullPath, 'node_modules'),
+                        path.join(fullPath, 'package-lock.json')
+                    ];
 
-                for (const pathToRemove of pathsToRemove) {
-                    if (fs.existsSync(pathToRemove)) {
-                        console.log(`Removing: ${pathToRemove}`);
-                        fs.rmSync(pathToRemove, { recursive: true, force: true });
+                    for (const pathToRemove of pathsToRemove) {
+                        if (fs.existsSync(pathToRemove)) {
+                            console.log(`Removing: ${pathToRemove}`);
+                            fs.rmSync(pathToRemove, { recursive: true, force: true });
+                        }
                     }
                 }
             }
         }
-    }
 
-    // Handle tools under Misc directory
-    const miscDir = path.join(process.cwd(), 'Misc');
-    if (fs.existsSync(miscDir)) {
-        console.log('Processing Misc directory...');
-        const toolEntries = fs.readdirSync(miscDir);
+        // Handle tools under Misc directory
+        const miscDir = path.join(process.cwd(), 'Misc');
+        if (fs.existsSync(miscDir)) {
+            console.log('Processing Misc directory...');
+            const toolEntries = fs.readdirSync(miscDir);
 
-        for (const entry of toolEntries) {
-            const fullPath = path.join(miscDir, entry);
-            if (fs.statSync(fullPath).isDirectory()) {
-                const pathsToRemove = [
-                    path.join(fullPath, '.venv'),
-                    path.join(fullPath, 'node_modules'),
-                    path.join(fullPath, 'package-lock.json')
-                ];
+            for (const entry of toolEntries) {
+                const fullPath = path.join(miscDir, entry);
+                if (fs.statSync(fullPath).isDirectory()) {
+                    const pathsToRemove = [
+                        path.join(fullPath, '.venv'),
+                        path.join(fullPath, 'node_modules'),
+                        path.join(fullPath, 'package-lock.json')
+                    ];
 
-                for (const pathToRemove of pathsToRemove) {
-                    if (fs.existsSync(pathToRemove)) {
-                        console.log(`Removing: ${pathToRemove}`);
-                        fs.rmSync(pathToRemove, { recursive: true, force: true });
+                    for (const pathToRemove of pathsToRemove) {
+                        if (fs.existsSync(pathToRemove)) {
+                            console.log(`Removing: ${pathToRemove}`);
+                            fs.rmSync(pathToRemove, { recursive: true, force: true });
+                        }
                     }
                 }
             }
@@ -351,7 +353,11 @@ async function main() {
 
     switch (command) {
         case 'clean':
-            await cleanup();
+            if (subCommand === 'all') {
+                await cleanup(true);
+            } else {
+                await cleanup();
+            }
             break;
 
         case 'check':
