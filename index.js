@@ -26,6 +26,8 @@ const variables = [
     ["GAME_UNITY_VERSION", "CRITICAL", null, null],
     ["UNITYPY_USE_PYTHON_PARSER", "WARNING", "equalsTrueOrFalse", "does not equal to 'true' or 'false'"],
     ["RES_DIR", "CRITICAL", "validDirOrCreatable", "is not a valid directory or cannot be created"],
+    ["TEXTURES_DIR", "CRITICAL", "validDirOrCreatable", "is not a valid directory or cannot be created"],
+    ["OVERRIDES_DIR", "WARNING", "validDirOrCreatable", "is not a valid directory or cannot be created"],
     ["OUT_DIR", "CRITICAL", "validDirOrCreatable", "is not a valid directory or cannot be created"],
     ["BASE_LANG", "CRITICAL", "checkLangCode", "is not a valid 2-symbol [a-z] code"],
     ["TARGET_LANG", "CRITICAL", "checkLangCode", "is not a valid 2-symbol [a-z] code"],
@@ -132,8 +134,8 @@ async function checkEnvironment() {
 async function cleanup(all = false) {
     console.log(chalk.blue('Starting cleanup...'));
 
-    // Remove RES_DIR and OUT_DIR
-    for (const dir of [process.env.RES_DIR, process.env.OUT_DIR]) {
+    // Remove RES_DIR, TEXTURES_DIR and OUT_DIR
+    for (const dir of [process.env.RES_DIR, process.env.TEXTURES_DIR, process.env.OUT_DIR]) {
         if (dir && fs.existsSync(dir)) {
             console.log(`Removing directory: ${dir}`);
             fs.rmSync(dir, { recursive: true, force: true });

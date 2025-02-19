@@ -1,7 +1,6 @@
 node_modules/
 1000xRESIST/
-!resources/
-!distr/
+*.png
 *.exe
 *.txt
 *.bundle

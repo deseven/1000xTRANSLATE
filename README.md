@@ -15,7 +15,7 @@ The toolset is intended to be used in the following way:
  - translator/checker
  - fonts patching
  - general polishing & documentation
- - texture and other resources overrides (?)
+ - ~~texture~~ and other resources overrides (?)
 
 
 ## Functions
@@ -63,6 +63,7 @@ See [INSTALL.md](INSTALL.md).
  - Run `npm run build` to download current translation from the Google Sheet document and import it to the game files. Repeat every time you want to test your translation.
  - Run `npm run clean` to clean up extracted and modified resources.
  - See `npm run` for more commands (for advanced users).
+ - You can override textures by placing them in you `OVERRIDES_DIR` with the same name as they are in `TEXTURES_DIR` after exporting.
 
 
 ## Thanks
