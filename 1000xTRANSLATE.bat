@@ -7,14 +7,16 @@ echo 2. Build translation
 echo 3. Clean everything up
 echo 4. Install internal dependencies
 echo 5. Check config file
+echo 6. Exit
 echo.
-set /p choice="Enter your choice (1-5): "
+set /p choice="Enter your choice (1-6): "
 
 if "%choice%"=="1" goto dump
 if "%choice%"=="2" goto build
 if "%choice%"=="3" goto clean
 if "%choice%"=="4" goto init
 if "%choice%"=="5" goto check
+if "%choice%"=="6" goto exit
 
 echo Invalid choice. Please try again.
 pause
@@ -22,29 +24,33 @@ goto menu
 
 :dump
 echo Running 'npm run dump'...
-npm run dump
-goto end
+call npm run dump
+goto completed
 
 :build
 echo Running 'npm run build'...
-npm run build
-goto end
+call npm run build
+goto completed
 
 :clean
 echo Running 'npm run clean'...
-npm run clean
-goto end
+call npm run clean
+goto completed
 
 :init
 echo Running 'npm run init'...
-npm run init
-goto end
+call npm run init
+goto completed
 
 :check
 echo Running 'npm run check'...
-npm run check
-goto end
+call npm run check
+goto completed
 
-:end
+:completed
 echo Operation completed.
 pause
+goto menu
+
+:exit
+exit /b
