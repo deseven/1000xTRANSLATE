@@ -26,6 +26,7 @@
 ## Prepare Google Sheets document
  - Copy [Google Sheets document](https://docs.google.com/spreadsheets/d/10KcHa_iS_RSgsVauCDe6EKbskN4iZfaT9PPjdGJk--4/edit?usp=sharing) under your name.
  - Set up [a service account](https://console.cloud.google.com/) (google "How to set up service account to access google sheets" if you're not sure how to do that, [here is one example](https://stackoverflow.com/a/76838253)), save a JSON file with credentials to 1000xTRANSLATE dir and share the document you copied with this service account's email.
+ - Don't forget to [enable Google Sheets API](https://support.google.com/googleapi/answer/6158841?hl=en).
 
 
 # Update
