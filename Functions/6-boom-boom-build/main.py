@@ -21,11 +21,12 @@ if os.getenv('UNITYPY_USE_PYTHON_PARSER') == 'true':
     from UnityPy.helpers import TypeTreeHelper
     TypeTreeHelper.read_typetree_boost = False
 
-bundle_dir = os.path.join(data_dir, 'StreamingAssets/aa/StandaloneWindows64')
+streaming_assets_path = os.path.join('StreamingAssets', 'aa', 'StandaloneWindows64')
+bundle_dir = os.path.join(data_dir, streaming_assets_path)
 dialogue_bundles = [f for f in os.listdir(bundle_dir) if f.endswith('.bundle') and '_other_' in f]
 texture_bundles = [f for f in os.listdir(bundle_dir) if f.endswith('.bundle') and '_texture_' in f]
 
-with open(os.path.join('../..', 'data', 'I2.loc.typetree.json'), 'r', encoding='utf-8') as f:
+with open(os.path.join('../','../', 'data', 'I2.loc.typetree.json'), 'r', encoding='utf-8') as f:
     I2LocTypetree = json.load(f)
 
 with open(os.path.join(res_dir, 'I2Languages.json'), 'r', encoding='utf-8') as f:
@@ -86,8 +87,8 @@ for bundle_name in dialogue_bundles:
                     if typetree:
                         objd = obj.deref()
                         objd.save_typetree(typetree)
-                        os.makedirs(os.path.join(out_dir, 'StreamingAssets/aa/StandaloneWindows64', os.path.dirname(bundle_name)), exist_ok=True)
-                        with open(os.path.join(out_dir, 'StreamingAssets/aa/StandaloneWindows64', bundle_name), "wb") as f:
+                        os.makedirs(os.path.join(out_dir, streaming_assets_path, os.path.dirname(bundle_name)), exist_ok=True)
+                        with open(os.path.join(out_dir, streaming_assets_path, bundle_name), "wb") as f:
                             f.write(env.file.save(packer="original"))
             except:
                 continue

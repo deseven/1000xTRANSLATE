@@ -16,11 +16,12 @@ if os.getenv('UNITYPY_USE_PYTHON_PARSER') == 'true':
     from UnityPy.helpers import TypeTreeHelper
     TypeTreeHelper.read_typetree_boost = False
 
-bundle_dir = os.path.join(data_dir, 'StreamingAssets/aa/StandaloneWindows64')
+streaming_assets_path = os.path.join('StreamingAssets', 'aa', 'StandaloneWindows64')
+bundle_dir = os.path.join(data_dir, streaming_assets_path)
 dialogue_bundles = [f for f in os.listdir(bundle_dir) if f.endswith('.bundle') and '_other_' in f]
 texture_bundles = [f for f in os.listdir(bundle_dir) if f.endswith('.bundle') and '_texture_' in f]
 
-with open(os.path.join(os.path.dirname(__file__), '../../data/I2.loc.typetree.json'), 'r', encoding='utf-8') as f:
+with open(os.path.join(os.path.dirname(__file__), os.path.join('../', '../', 'data/I2.loc.typetree.json')), 'r', encoding='utf-8') as f:
     I2LocTypetree = json.load(f)
 
 file_path = os.path.join(data_dir, 'resources.assets')
@@ -58,26 +59,26 @@ for bundle_name in dialogue_bundles:
             try:
                 data = obj.read()
                 script = data.m_Script.read()
-
-                if script.m_ClassName == 'DialogueDatabase':
-                    # check for typetree availability
-                    if not data.object_reader.serialized_type.nodes:
-                        print(f"[WARN] Skipping {asset_path} - No typetree found")
-                        continue
-
-                    typetree = data.object_reader.read_typetree()
-                    json_data = json.dumps(typetree, indent=4, ensure_ascii=False)
-
-                    # build destination path
-                    name = getattr(data, 'm_Name', 'MonoBehaviour')
-                    print(f"Exporting {name}")
-                    asset_dir = os.path.join(bundle_dest, os.path.dirname(asset_path))
-                    filename = os.path.basename(asset_path) + ".json"
-
-                    os.makedirs(asset_dir, exist_ok=True)
-                    output_path = os.path.join(asset_dir, filename)
-
-                    with open(output_path, 'w', encoding='utf-8') as f:
-                        f.write(json_data)
             except:
                 continue
+
+            if script.m_ClassName == 'DialogueDatabase':
+                # check for typetree availability
+                if not data.object_reader.serialized_type.nodes:
+                    print(f"[WARN] Skipping {asset_path} - No typetree found")
+                    continue
+
+                typetree = data.object_reader.read_typetree()
+                json_data = json.dumps(typetree, indent=4, ensure_ascii=False)
+
+                # build destination path
+                name = getattr(data, 'm_Name', 'MonoBehaviour')
+                print(f"Exporting {name}")
+                asset_dir = os.path.join(bundle_dest, os.path.dirname(asset_path))
+                filename = os.path.basename(asset_path) + ".json"
+
+                os.makedirs(asset_dir, exist_ok=True)
+                output_path = os.path.join(asset_dir, filename)
+
+                with open(output_path, 'w', encoding='utf-8') as f:
+                    f.write(json_data)
