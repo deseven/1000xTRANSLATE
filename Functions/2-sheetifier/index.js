@@ -5,8 +5,8 @@ const ThousandXspreadsheeT = require('../../Misc/ThousandXspreadsheeT');
 const sleep = ms => new Promise(res => setTimeout(res, ms));
 
 dotenv.config({ path: '.env' });
-const resDir = path.isAbsolute(process.env.RES_DIR) 
-    ? process.env.RES_DIR 
+const resDir = path.isAbsolute(process.env.RES_DIR)
+    ? process.env.RES_DIR
     : path.join(__dirname, '../../', process.env.RES_DIR);
 
 let allQuests = [];
@@ -154,7 +154,7 @@ jsonFiles.forEach(file => {
                         f.type === 4 &&
                         f.title === process.env.BASE_LANG
                     );
-                    if (!dialogueField) return;
+                    //if (!dialogueField) return; // apparently there are dialogues without dialogue text
 
                     const menuField = entry.fields?.find(f =>
                         f.type === 4 &&
@@ -178,17 +178,19 @@ jsonFiles.forEach(file => {
                     }
 
                     const dialogueKey = `${convTitle}/${entry.id}`;
-                    fileDialogues.push({
-                        key: dialogueKey,
-                        value: {
-                            ...(actorText && { actor_text: actorText }),
-                            ...(menuField?.value && { menu_text: menuField.value }),
-                            dialogue_text: dialogueField.value,
-                            from_file: file,
-                            chapter_number: chapterNumber
-                        }
-                    });
-                    fileDialoguesCount++;
+                    if (menuField || dialogueField) {
+                        fileDialogues.push({
+                            key: dialogueKey,
+                            value: {
+                                ...(actorText && { actor_text: actorText }),
+                                ...(menuField?.value && { menu_text: menuField.value }),
+                                ...(dialogueField?.value && { dialogue_text: dialogueField.value }),
+                                from_file: file,
+                                chapter_number: chapterNumber
+                            }
+                        });
+                        fileDialoguesCount++;
+                    }
                 });
             });
         }
@@ -248,10 +250,10 @@ fs.writeFileSync(path.join(__dirname, '../../data/parsed_terms.json'), JSON.stri
 console.log(`\nUploading data to the document...`);
 
 const files = {
-    actors:    path.join(__dirname, '../../data/parsed_actors.json'),
-    quests:    path.join(__dirname, '../../data/parsed_quests.json'),
+    actors: path.join(__dirname, '../../data/parsed_actors.json'),
+    quests: path.join(__dirname, '../../data/parsed_quests.json'),
     dialogues: path.join(__dirname, '../../data/parsed_dialogues.json'),
-    system:    path.join(__dirname, '../../data/parsed_terms.json')
+    system: path.join(__dirname, '../../data/parsed_terms.json')
 };
 
 async function main() {
@@ -267,7 +269,7 @@ async function main() {
 
         // Load and process actors
         console.log("Uploading actors...")
-        const actorsData = JSON.parse(fs.readFileSync(files.actors, 'utf8')); 
+        const actorsData = JSON.parse(fs.readFileSync(files.actors, 'utf8'));
         const actorsStrings = {};
         for (const [key, value] of Object.entries(actorsData)) {
             actorsStrings[`Actor/${key}`] = { original: value };
@@ -318,11 +320,13 @@ async function main() {
                 };
             }
 
-            const dialogueKey = `${baseKey}/DialogueText`;
-            dialoguesStrings[dialogueKey] = {
-                actor: actor,
-                original: entry.dialogue_text
-            };
+            if (entry.dialogue_text) {
+                const dialogueKey = `${baseKey}/DialogueText`;
+                dialoguesStrings[dialogueKey] = {
+                    actor: actor,
+                    original: entry.dialogue_text
+                };
+            }
         }
         await spreadsheet.replaceDialogues(dialoguesStrings);
 
