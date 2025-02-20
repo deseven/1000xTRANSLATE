@@ -14,9 +14,9 @@
     "function:desheetifier": "node index.js run:function 5-desheetifier",
     "function:bbb": "node index.js run:function 6-boom-boom-build",
     "init": "node index.js install:all",
-    "dump": "node index.js run:function 1-exporter 2-sheetifier",
+    "dump": "node index.js run:function 1-exporter,2-sheetifier",
     "translate": "node index.js run:function 3-translator '*'",
-    "build": "node index.js run:function 5-desheetifier 6-boom-boom-build"
+    "build": "node index.js run:function 5-desheetifier,6-boom-boom-build"
   },
   "author": "deseven",
   "license": "ISC",

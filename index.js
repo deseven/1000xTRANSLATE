@@ -199,7 +199,7 @@ async function checkEnvironment(requiredFor = null) {
         for (const [varName, config] of Object.entries(variables)) {
             checkVariable(varName, config);
         }
-        
+
         console.log('\n## Final Status ##');
         console.log(chalk.green('Check completed. Any warnings above should be reviewed.'));
     }
@@ -500,34 +500,38 @@ async function main() {
             switch (subCommand) {
                 case 'function':
                     const functionDirs = getFunctionDirs();
-                    // Get the function name (first argument)
-                    const functionName = args[0];
-                    // Get the rest of the arguments to pass to the script
+                    // Get the function names (first argument, split by comma)
+                    const functionNames = args[0].split(',');
+                    // Get the rest of the arguments to pass to the scripts
                     const functionExtraArgs = args.slice(1);
 
-                    const targetFunctionDir = functionDirs.find(dir => path.basename(dir).includes(functionName));
-                    if (!targetFunctionDir) {
-                        console.error(chalk.red(`Function "${functionName}" not found`));
-                        process.exit(1);
+                    for (const functionName of functionNames) {
+                        const targetFunctionDir = functionDirs.find(dir => path.basename(dir).includes(functionName));
+                        if (!targetFunctionDir) {
+                            console.error(chalk.red(`Function "${functionName}" not found`));
+                            process.exit(1);
+                        }
+                        console.log(chalk.blue(`\nProcessing function: ${functionName}`));
+                        await run(targetFunctionDir, functionExtraArgs);
                     }
-                    console.log(chalk.blue(`\nProcessing function: ${functionName}`));
-                    await run(targetFunctionDir, functionExtraArgs);
                     break;
 
                 case 'tool':
                     const toolDirs = getToolDirs();
-                    // Get the tool name (first argument)
-                    const toolName = args[0];
-                    // Get the rest of the arguments to pass to the script
+                    // Get the tool names (first argument, split by comma)
+                    const toolNames = args[0].split(',');
+                    // Get the rest of the arguments to pass to the scripts
                     const toolExtraArgs = args.slice(1);
 
-                    const targetToolDir = toolDirs.find(dir => path.basename(dir) === toolName);
-                    if (!targetToolDir) {
-                        console.error(chalk.red(`Tool "${toolName}" not found`));
-                        process.exit(1);
+                    for (const toolName of toolNames) {
+                        const targetToolDir = toolDirs.find(dir => path.basename(dir) === toolName);
+                        if (!targetToolDir) {
+                            console.error(chalk.red(`Tool "${toolName}" not found`));
+                            process.exit(1);
+                        }
+                        console.log(chalk.blue(`\nProcessing tool: ${toolName}`));
+                        await run(targetToolDir, toolExtraArgs);
                     }
-                    console.log(chalk.blue(`\nProcessing tool: ${toolName}`));
-                    await run(targetToolDir, toolExtraArgs);
                     break;
 
                 default:

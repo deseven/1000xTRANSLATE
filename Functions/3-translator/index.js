@@ -188,8 +188,7 @@ Do not output anything else except for a valid json array of translated strings.
                 messages: [
                     { role: 'system', content: prompt },
                     { role: 'user', content: JSON.stringify(dialogueData, null, 2)}
-                ],
-                temperature: process.env.OPENAI_TEMPERATURE
+                ]
             });
 
             // Parse response

@@ -18,7 +18,6 @@ def get_path(env_var):
 
 data_dir = get_path('GAME_DATA_DIR')
 res_dir = get_path('RES_DIR')
-textures_dir = get_path('TEXTURES_DIR')
 overrides_dir = get_path('OVERRIDES_DIR')
 out_dir = os.path.join(get_path('OUT_DIR'), '1000xRESIST_Data')
 
@@ -71,11 +70,9 @@ if overrides_dir:
         for asset_path, obj in env.container.items():
             if obj.type.name in ['Texture2D','Sprite']:
                 if asset_path in textures:
-                    os.makedirs(textures_dir, exist_ok=True)
                     data = obj.read()
                     if not asset_path.endswith('.png'):
                         asset_path += '.png'
-                    path = os.path.join(textures_dir, os.path.basename(asset_path))
                     override = os.path.join(overrides_dir, os.path.basename(asset_path))
                     if os.path.exists(override) and obj.type.name == 'Texture2D': # sprite importing is not available rn
                         img = Image.open(override)
