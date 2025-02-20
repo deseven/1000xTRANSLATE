@@ -12,7 +12,7 @@ The toolset is intended to be used in the following way:
 
 ## Roadmap
  - ~~be able to export, parse, translate and import all visible text data~~
- - translator/checker
+ - ~~translator~~/checker
  - fonts patching
  - general polishing & documentation
  - ~~texture~~ and other resources overrides (?)
@@ -23,7 +23,7 @@ The toolset is intended to be used in the following way:
 | ----------------- | ----- | ------------------------------------------------------------------- |
 | Exporter          | ✅    | Exports required game data                                          |
 | Sheetifier        | ✅    | Parses game data and imports all strings into Google Sheets         |
-| Translator        | WIP   | (optional) Translates strings using LLMs                            |
+| Translator        | ✅    | (optional) Translates strings using LLMs                            |
 | Checker           | TO DO | (optional) Checks for abnormalities in the strings                  |
 | Desheetifier      | ✅    | Pulls all strings from Google Sheets and writes them into game data | 
 | Boom Boom Build   | ✅    | Imports required game data, creates distribution packages           |
@@ -55,15 +55,11 @@ Imports resources from `RES_DIR` into the game files, outputs changed bundles re
 
 
 ## Installation
-See [INSTALL.md](INSTALL.md).
+See [INSTALL.md](INSTALL.md) for installation instructions.
 
 
 ## Usage
- - Run `npm run dump` to export what we need from the game, parse it an upload to the Google Sheets document. Don't be afraid to re-run it, it won't overwrite your translation.
- - Run `npm run build` to download current translation from the Google Sheet document and import it to the game files. Repeat every time you want to test your translation.
- - Run `npm run clean` to clean up extracted and modified resources.
- - See `npm run` for more commands (for advanced users).
- - You can override textures by placing them in you `OVERRIDES_DIR` with the same name as they are in `TEXTURES_DIR` after exporting.
+See [USAGE.md](USAGE.md) for usage instructions.
 
 
 ## Thanks
@@ -71,3 +67,4 @@ See [INSTALL.md](INSTALL.md).
  - **VaDiM** and **idkwhatimsaying** for helping with typetree extraction
  - **turinar71** (who is the author of the Italian translation, btw) for some useful info
  - **K_A_S_a_L_E_X** for original data mining
+ - **F3rn4n** for making a list of textures for translation

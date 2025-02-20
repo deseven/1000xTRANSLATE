@@ -12,29 +12,107 @@ try {
     process.exit(1);
 }
 
-// Variables to check (name:severity:function:error)
-const variables = [
-    ["SPREADSHEET_ID", "CRITICAL", null, null],
-    ["GOOGLE_CREDENTIALS_FILE", "CRITICAL", "fileExistsAndNotEmpty", "file does not exist or is empty"],
-    ["VOCAB_CHARS_SHEET_NAME", "CRITICAL", null, null],
-    ["VOCAB_TERMS_SHEET_NAME", "CRITICAL", null, null],
-    ["SYSTEM_SHEET_NAME", "CRITICAL", null, null],
-    ["ACTORS_SHEET_NAME", "CRITICAL", null, null],
-    ["QUESTS_SHEET_NAME", "CRITICAL", null, null],
-    ["DIALOGUES_SHEET_NAME", "CRITICAL", null, null],
-    ["GAME_DATA_DIR", "CRITICAL", "dirExistsAndNotEmpty", "directory does not exist or is empty"],
-    ["GAME_UNITY_VERSION", "CRITICAL", null, null],
-    ["UNITYPY_USE_PYTHON_PARSER", "WARNING", "equalsTrueOrFalse", "does not equal to 'true' or 'false'"],
-    ["RES_DIR", "CRITICAL", "validDirOrCreatable", "is not a valid directory or cannot be created"],
-    ["TEXTURES_DIR", "CRITICAL", "validDirOrCreatable", "is not a valid directory or cannot be created"],
-    ["OVERRIDES_DIR", "WARNING", "validDirOrCreatable", "is not a valid directory or cannot be created"],
-    ["OUT_DIR", "CRITICAL", "validDirOrCreatable", "is not a valid directory or cannot be created"],
-    ["BASE_LANG", "CRITICAL", "checkLangCode", "is not a valid 2-symbol [a-z] code"],
-    ["TARGET_LANG", "CRITICAL", "checkLangCode", "is not a valid 2-symbol [a-z] code"],
-    ["OPENAI_API_ENDPOINT", "WARNING", "checkStartsWithHttp", "does not start with 'http'"],
-    ["OPENAI_API_KEY", "WARNING", null, null],
-    ["OPENAI_MODEL", "WARNING", null, null]
-];
+// Variable definitions
+const variables = {
+    SPREADSHEET_ID: {
+        required_by: ['function:2-sheetifier', 'function:3-translator', 'function:4-checker', 'function:5-desheetifier', 'tool:svscript-convert']
+    },
+    GOOGLE_CREDENTIALS_FILE: {
+        required_by: ['function:2-sheetifier', 'function:3-translator', 'function:4-checker', 'function:5-desheetifier', 'tool:svscript-convert'],
+        check: 'fileExistsAndNotEmpty',
+        message: 'file does not exist or is empty'
+    },
+    VOCAB_CHARS_SHEET_NAME: {
+        required_by: ['function:2-sheetifier', 'function:3-translator', 'tool:svscript-convert']
+    },
+    VOCAB_TERMS_SHEET_NAME: {
+        required_by: ['function:2-sheetifier', 'function:3-translator']
+    },
+    SYSTEM_SHEET_NAME: {
+        required_by: ['function:2-sheetifier', 'function:5-desheetifier']
+    },
+    ACTORS_SHEET_NAME: {
+        required_by: ['function:2-sheetifier', 'function:5-desheetifier']
+    },
+    QUESTS_SHEET_NAME: {
+        required_by: ['function:2-sheetifier', 'function:5-desheetifier']
+    },
+    DIALOGUES_SHEET_NAME: {
+        required_by: ['function:2-sheetifier', 'function:3-translator', 'function:4-checker', 'function:5-desheetifier']
+    },
+    GAME_DATA_DIR: {
+        required_by: ['function:1-exporter', 'function:6-boom-boom-build'],
+        check: 'dirExistsAndNotEmpty',
+        message: 'directory does not exist or is empty'
+    },
+    GAME_UNITY_VERSION: {
+        required_by: ['function:1-exporter', 'function:6-boom-boom-build']
+    },
+    UNITYPY_USE_PYTHON_PARSER: {
+        required_by: [],
+        check: 'equalsTrueOrFalse',
+        message: "does not equal to 'true' or 'false'"
+    },
+    RES_DIR: {
+        required_by: ['function:1-exporter', 'function:6-boom-boom-build'],
+        check: 'validDirOrCreatable',
+        message: 'is not a valid directory or cannot be created'
+    },
+    TEXTURES_DIR: {
+        required_by: ['function:1-exporter'],
+        check: 'validDirOrCreatable',
+        message: 'is not a valid directory or cannot be created'
+    },
+    OVERRIDES_DIR: {
+        required_by: [],
+        check: 'validDirOrCreatable',
+        message: 'is not a valid directory or cannot be created'
+    },
+    OUT_DIR: {
+        required_by: ['function:6-boom-boom-build'],
+        check: 'validDirOrCreatable',
+        message: 'is not a valid directory or cannot be created'
+    },
+    BASE_LANG: {
+        required_by: ['function:2-sheetifier'],
+        check: 'checkLangCode',
+        message: 'is not a valid 2-symbol [a-z] code'
+    },
+    TARGET_LANG: {
+        required_by: ['function:5-desheetifier'],
+        check: 'checkLangCode',
+        message: 'is not a valid 2-symbol [a-z] code'
+    },
+    OPENAI_API_ENDPOINT: {
+        required_by: ['function:3-translator', 'function:4-checker'],
+        check: 'checkStartsWithHttp',
+        message: "does not start with 'http'"
+    },
+    OPENAI_API_KEY: {
+        required_by: ['function:3-translator', 'function:4-checker']
+    },
+    OPENAI_MODEL: {
+        required_by: ['function:3-translator', 'function:4-checker']
+    },
+    OPENAI_TEMPERATURE: {
+        required_by: ['function:3-translator', 'function:4-checker']
+    },
+    LANG_FROM: {
+        required_by: ['function:3-translator']
+    },
+    LANG_TO: {
+        required_by: ['function:3-translator']
+    },
+    EXAMPLE_HI: {
+        required_by: ['function:3-translator']
+    },
+    EXAMPLE_HOWRU: {
+        required_by: ['function:3-translator']
+    },
+    SV_SPREADSHEET_ID: {
+        required_by: ['tool:svscript-convert']
+    }
+};
 
 // Check functions
 const checks = {
@@ -79,54 +157,51 @@ const checks = {
 };
 
 // Main check function
-async function checkEnvironment() {
-    let criticalErrors = 0;
-    let warningErrors = 0;
-
+async function checkEnvironment(requiredFor = null) {
+    let errors = 0;
     console.log('## Variable Checks ##');
 
-    for (const [varName, severity, checkFunc, message] of variables) {
+    // Function to check a single variable
+    const checkVariable = (varName, config) => {
         const value = process.env[varName];
-        const defaultMessage = checkFunc ? 'failed validation check.' : 'is not set or is empty.';
-        const errorMessage = message || defaultMessage;
+        const errorMessage = config.message || (config.check ? 'failed validation check.' : 'is not set or is empty.');
 
         if (!value) {
-            if (severity === 'CRITICAL') {
-                console.log(chalk.red('[CRITICAL]'), `${varName} ${errorMessage}`);
-                criticalErrors++;
-            } else {
-                console.log(chalk.yellow('[WARNING]'), `${varName} ${errorMessage}`);
-                warningErrors++;
-            }
-            continue;
+            console.log(chalk.yellow('[WARNING]'), `${varName} ${errorMessage}`);
+            return false;
         }
 
-        if (checkFunc) {
-            if (!checks[checkFunc](value)) {
-                if (severity === 'CRITICAL') {
-                    console.log(chalk.red('[CRITICAL]'), `${varName} ${errorMessage}`);
-                    criticalErrors++;
-                } else {
-                    console.log(chalk.yellow('[WARNING]'), `${varName} ${errorMessage}`);
-                    warningErrors++;
+        if (config.check && !checks[config.check](value)) {
+            console.log(chalk.yellow('[WARNING]'), `${varName} ${errorMessage}`);
+            return false;
+        }
+
+        console.log(chalk.green('[OK]'), `${varName} is set and valid.`);
+        return true;
+    };
+
+    if (requiredFor) {
+        // Check only variables required for specific function/tool
+        for (const [varName, config] of Object.entries(variables)) {
+            if (config.required_by && config.required_by.includes(requiredFor)) {
+                if (!checkVariable(varName, config)) {
+                    errors++;
                 }
-            } else {
-                console.log(chalk.green('[OK]'), `${varName} is set and valid.`);
             }
-        } else {
-            console.log(chalk.green('[OK]'), `${varName} is set.`);
         }
-    }
 
-    console.log('\n## Final Status ##');
-
-    if (criticalErrors > 0) {
-        console.log(chalk.red('There are critical errors, please fix them first.'));
-        process.exit(1);
-    } else if (warningErrors > 0) {
-        console.log(chalk.yellow('Encountered several non-critical errors.'));
+        if (errors > 0) {
+            console.log(chalk.red('\nRequired variables are missing or invalid.'));
+            process.exit(1);
+        }
     } else {
-        console.log(chalk.green('All seems to be in order :)'));
+        // Check all variables
+        for (const [varName, config] of Object.entries(variables)) {
+            checkVariable(varName, config);
+        }
+        
+        console.log('\n## Final Status ##');
+        console.log(chalk.green('Check completed. Any warnings above should be reviewed.'));
     }
     console.log();
 }
@@ -278,8 +353,14 @@ function getToolDirs() {
         .map(dir => path.join(miscDir, dir));
 }
 
-function run(dir) {
+function run(dir, extraArgs = []) {
     console.log(chalk.blue(`Running ${dir}`));
+
+    const dirType = dir.includes('Functions') ? 'function' : 'tool';
+    const dirName = path.basename(dir);
+    const requiredFor = `${dirType}:${dirName}`;
+
+    checkEnvironment(requiredFor);
 
     const hasPackageJson = fs.existsSync(path.join(dir, 'package.json'));
     const hasRequirements = fs.existsSync(path.join(dir, 'requirements.txt'));
@@ -289,7 +370,9 @@ function run(dir) {
         if (fs.existsSync(indexPath)) {
             console.log(chalk.blue(`Running Node.js: ${indexPath}`));
             try {
-                execSync(`node "${indexPath}"`, { stdio: 'inherit' });
+                // Join the extra arguments and escape them properly
+                const argsString = extraArgs.map(arg => `"${arg}"`).join(' ');
+                execSync(`node "${indexPath}" ${argsString}`, { stdio: 'inherit' });
             } catch {
                 console.log(chalk.red('Finished with an error.'));
                 process.exit(1);
@@ -417,30 +500,34 @@ async function main() {
             switch (subCommand) {
                 case 'function':
                     const functionDirs = getFunctionDirs();
-                    for (const arg of args) {
-                        const targetFunctionDir = functionDirs.find(dir => path.basename(dir).includes(arg));
-                        if (!targetFunctionDir) {
-                            console.error(chalk.red(`Function "${arg}" not found`));
-                            process.exit(1);
-                        }
-                        console.log(chalk.blue(`\nProcessing function: ${arg}`));
-                        await checkEnvironment();
-                        await run(targetFunctionDir);
+                    // Get the function name (first argument)
+                    const functionName = args[0];
+                    // Get the rest of the arguments to pass to the script
+                    const functionExtraArgs = args.slice(1);
+
+                    const targetFunctionDir = functionDirs.find(dir => path.basename(dir).includes(functionName));
+                    if (!targetFunctionDir) {
+                        console.error(chalk.red(`Function "${functionName}" not found`));
+                        process.exit(1);
                     }
+                    console.log(chalk.blue(`\nProcessing function: ${functionName}`));
+                    await run(targetFunctionDir, functionExtraArgs);
                     break;
 
                 case 'tool':
                     const toolDirs = getToolDirs();
-                    for (const arg of args) {
-                        const targetToolDir = toolDirs.find(dir => path.basename(dir) === arg);
-                        if (!targetToolDir) {
-                            console.error(chalk.red(`Tool "${arg}" not found`));
-                            process.exit(1);
-                        }
-                        console.log(chalk.blue(`\nProcessing tool: ${arg}`));
-                        await checkEnvironment();
-                        await run(targetToolDir);
+                    // Get the tool name (first argument)
+                    const toolName = args[0];
+                    // Get the rest of the arguments to pass to the script
+                    const toolExtraArgs = args.slice(1);
+
+                    const targetToolDir = toolDirs.find(dir => path.basename(dir) === toolName);
+                    if (!targetToolDir) {
+                        console.error(chalk.red(`Tool "${toolName}" not found`));
+                        process.exit(1);
                     }
+                    console.log(chalk.blue(`\nProcessing tool: ${toolName}`));
+                    await run(targetToolDir, toolExtraArgs);
                     break;
 
                 default:

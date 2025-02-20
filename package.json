@@ -10,10 +10,12 @@
     "tool:svscript-convert": "node index.js run:tool svscript-convert",
     "function:exporter": "node index.js run:function 1-exporter",
     "function:sheetifier": "node index.js run:function 2-sheetifier",
+    "function:translator": "node index.js run:function 3-translator",
     "function:desheetifier": "node index.js run:function 5-desheetifier",
     "function:bbb": "node index.js run:function 6-boom-boom-build",
     "init": "node index.js install:all",
     "dump": "node index.js run:function 1-exporter 2-sheetifier",
+    "translate": "node index.js run:function 3-translator '*'",
     "build": "node index.js run:function 5-desheetifier 6-boom-boom-build"
   },
   "author": "deseven",
