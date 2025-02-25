@@ -10,14 +10,21 @@ You can run them individually if needed. Already translated strings won't be tou
 
 
 ## Translating
-You can translate everything manually or with the help of the included Translator (dialogues only).
-Run `npm run translate` and follow the prompts to translate all untranslated dialogues.
+You can translate everything manually or with the help of the included Translator (dialogues only). Note that having filled vocabularies (prefied with `VOCAB:`) is a must if you want to achieve a translation of a reasonable quality.
 
-Alternatively you can use the Function directly by running `npm run function:translator key_wildcard [force]`, where `key_wildcard` is a dialogue key wildcard to translate and `force` is a flag to enforce the translation of already translated strings.
+Run `npm run translate` and follow the prompts to translate all untranslated dialogues. You can cancel it and then run again at any moment. Alternatively you can use the Function directly by running `npm run function:translator key_wildcard [force]`, where `key_wildcard` is a dialogue key wildcard to translate and `force` is a flag to enforce the translation of already translated strings.
 
 For example, `npm run function:translator 'Dialogue/HighSchool_v2/*' force` will translate all dialogues with keys starting with `Dialogue/HighSchool_v2/` whether they already have a translation or not. Note that the wildcard support is limited and only applies to the key suffix, so something like `Dialogue/*/artroom/` would not work.
 
-All strings translated that way will be marked with red in the spreadsheet.
+All strings translated that way will be marked with **red** in the spreadsheet.
+
+Also see **LLM usage notes** below.
+
+
+## Checking
+In order to check your translated dialogues you can run `npm run check` (or `npm run function:checker`). This will send all your translated dialogues to LLM which will try to detect any anomalies. The process could be interrupted and then resumed at any moment. As a result, you'll get a report (should open automatically, but if it didn't look for `checker-report.htm` in the root dir). It will probably contain a lot of garbage, but treat it seriously and check all entries, it is able to notice things that remained undetected by several people.
+
+Also see **LLM usage notes** below.
 
 
 ## Overriding the textures
@@ -31,10 +38,23 @@ Run `npm run build`. It's an alias for the following two commands:
 Again, you can run them individually if needed. The result would be the changed game files in your `OUT_DIR`, ready to be put into the game or distributed.
 
 
-## Cleaning up
+## Maintenance
 Use `npm run clean` to clean exported and parsed resources.
 Use `npm run clean:all` to also remove all installed dependencies in Functions and Misc.
 None of the above would affect anything in your `DATA_DIR`, `OVERRIDES_DIR` and spreadsheet.
+
+Use `npm run init` to install required dependencies.
+Use `npm run validate` to check the env file validity and all dependencies.
+
+
+## LLM usage notes
+Only Translator and Checker depend on LLMs, so if you don't plan to use them you can skip this.
+
+The translation and checking really depend on the quality of the model you use. The models also have their own biases, so there is no universal solution for everything. Experimenting is a must. The prompts right now are hardcoded in the scripts, but I plan to allow overriding them in the future.
+
+Now, how to pick the model. In general, DeepSeek V3 gives very good results and is cheap (if it's unavailable as usual, check for [alternative providers on OpenRouter](https://openrouter.ai/deepseek/deepseek-chat)). OpenAI's GPT-4o also gives decent results, so is Anthropic's Claude Haiku, but they are obviously much more expensive. The tasks are a bit too complicated for 4o-mini or other models of the same class, that's why I also can't recommend using local models, unless you can run at least a 30B (or better a 70B) one.
+
+You can expect to spend from 1 to 5 bucks on translation and checking.
 
 
 ## Importing original Sunset Vistor script files

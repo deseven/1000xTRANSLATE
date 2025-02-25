@@ -7,6 +7,7 @@ node_modules/
 *.json
 *.zip
 *.log
+*.htm
 .env
 .venv
 !package.json

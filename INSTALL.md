@@ -7,12 +7,12 @@
 4. Copy `.env.example` to `.env` and edit it, following the comments. As a bare minimum, you should define `SPREADSHEET_ID`, `GOOGLE_CREDENTIALS_FILE` (see below) and `GAME_DATA_DIR`.
 5. Run `npm install` to install wrapper script dependencies.
 6. Run `npm run init` to install all needed internal dependencies.
-7. (optional) Run `npm run check` to see if anything is wrong.
+7. (optional) Run `npm run doctor` to see if anything is wrong.
 
 ## Windows
-1. Run Power Shell from Start Menu or in Windows Terminal.
+1. Run **Power Shell** from Start Menu or in Windows Terminal.
 2. Run `winget install Git.Git OpenJS.NodeJS.LTS Python.Python.3.9` and wait for the installation to complete. If your system doesn't have `winget` (early versions of Windows 10 or older), install all of that manually.
-3. Open a new instance of Power Shell to apply new PATH.
+3. Open a new instance of **Power Shell** to apply new PATH.
 4. Check that `git --version`, `node --version` and `python --version` commands work.
 5. Run `git clone https://github.com/deseven/1000xTRANSLATE`.
 6. Run `cd 1000xTRANSLATE`.
@@ -20,7 +20,7 @@
 8. Edit `.env` file in any text editor, following the comments in it. As a bare minimum, you should define `SPREADSHEET_ID`, `GOOGLE_CREDENTIALS_FILE` (see below) and `GAME_DATA_DIR` (for example `C:\Steam\steamapps\common\1000xRESIST\1000xRESIST_Data`).
 9. Run `npm install` to install wrapper script dependencies.
 10. Run `npm run init` to install all needed internal dependencies.
-11. (optional) Run `npm run check` to see if anything is wrong.
+11. (optional) Run `npm run doctor` to see if anything is wrong.
 12. (optional) To make the usage easier, you can also create a shortcut to `1000xTRANSLATE.bat` on your desktop, it's a simple script that will prompt you to pick from a predefined set of commands.
 
 ## Prepare Google Sheets document
@@ -30,4 +30,4 @@
 
 
 # Update
-A simple `git pull` should do. I'll try to keep backwards compatibility as much as possible.
+A simple `git pull` followed by `npm run init` and `npm run doctor` should do. I'll try to keep backwards compatibility as much as possible.

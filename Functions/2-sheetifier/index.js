@@ -14,7 +14,7 @@ let allActors = [];
 let allDialogues = [];
 let allTerms = {};
 
-const chapterDefinitions = JSON.parse(fs.readFileSync(path.join(__dirname, '../../data/chapter-definitions.json'), 'utf-8'));
+const chapterDefinitions = JSON.parse(fs.readFileSync(path.join(__dirname, '../../Data/chapter-definitions.json'), 'utf-8'));
 
 const lang_bind = {
     en: 0,
@@ -239,10 +239,10 @@ allQuests = allQuests
 // Final output and file generation
 console.log(`Results:\nUnique Actors (${Object.keys(allActors).length})\nQuests (${Object.keys(allQuests).length})\nDialogues (${Object.keys(allDialogues).length})\nTerms (${Object.keys(allTerms).length})`);
 
-fs.writeFileSync(path.join(__dirname, '../../data/parsed_actors.json'), JSON.stringify(allActors, null, 2));
-fs.writeFileSync(path.join(__dirname, '../../data/parsed_quests.json'), JSON.stringify(allQuests, null, 2));
-fs.writeFileSync(path.join(__dirname, '../../data/parsed_dialogues.json'), JSON.stringify(allDialogues, null, 2));
-fs.writeFileSync(path.join(__dirname, '../../data/parsed_terms.json'), JSON.stringify(allTerms, null, 2));
+fs.writeFileSync(path.join(__dirname, '../../Data/parsed_actors.json'), JSON.stringify(allActors, null, 2));
+fs.writeFileSync(path.join(__dirname, '../../Data/parsed_quests.json'), JSON.stringify(allQuests, null, 2));
+fs.writeFileSync(path.join(__dirname, '../../Data/parsed_dialogues.json'), JSON.stringify(allDialogues, null, 2));
+fs.writeFileSync(path.join(__dirname, '../../Data/parsed_terms.json'), JSON.stringify(allTerms, null, 2));
 
 // this was originally 2 separate scripts,
 // that why we're reading the files we've just saved, but whatever
@@ -250,10 +250,10 @@ fs.writeFileSync(path.join(__dirname, '../../data/parsed_terms.json'), JSON.stri
 console.log(`\nUploading data to the document...`);
 
 const files = {
-    actors: path.join(__dirname, '../../data/parsed_actors.json'),
-    quests: path.join(__dirname, '../../data/parsed_quests.json'),
-    dialogues: path.join(__dirname, '../../data/parsed_dialogues.json'),
-    system: path.join(__dirname, '../../data/parsed_terms.json')
+    actors: path.join(__dirname, '../../Data/parsed_actors.json'),
+    quests: path.join(__dirname, '../../Data/parsed_quests.json'),
+    dialogues: path.join(__dirname, '../../Data/parsed_dialogues.json'),
+    system: path.join(__dirname, '../../Data/parsed_terms.json')
 };
 
 async function main() {

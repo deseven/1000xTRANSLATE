@@ -30,13 +30,13 @@ bundle_dir = os.path.join(data_dir, streaming_assets_path)
 dialogue_bundles = [f for f in os.listdir(bundle_dir) if f.endswith('.bundle') and '_other_' in f]
 texture_bundles = [f for f in os.listdir(bundle_dir) if f.endswith('.bundle') and '_texture_' in f]
 
-with open(os.path.join('../','../', 'data', 'I2.loc.typetree.json'), 'r', encoding='utf-8') as f:
+with open(os.path.join('../','../', 'Data', 'I2.loc.typetree.json'), 'r', encoding='utf-8') as f:
     I2LocTypetree = json.load(f)
 
 with open(os.path.join(res_dir, 'I2Languages.json'), 'r', encoding='utf-8') as f:
     I2Languages = json.load(f)
 
-with open(os.path.join(os.path.dirname(__file__), '../', '../', 'data/textures.list'), 'r', encoding='utf-8') as f:
+with open(os.path.join(os.path.dirname(__file__), '../', '../', 'Data/textures.list'), 'r', encoding='utf-8') as f:
     textures = [line.strip() for line in f.readlines()]
 
 file_path = os.path.join(data_dir, 'resources.assets')

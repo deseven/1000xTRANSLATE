@@ -12,7 +12,7 @@ The toolset is intended to be used in the following way:
 
 ## Roadmap
  - ~~be able to export, parse, translate and import all visible text data~~
- - ~~translator~~/checker
+ - ~~translator/checker~~
  - fonts patching
  - general polishing & documentation
  - ~~texture~~ and other resources overrides (?)
@@ -23,8 +23,8 @@ The toolset is intended to be used in the following way:
 | ----------------- | ----- | ------------------------------------------------------------------- |
 | Exporter          | ✅    | Exports required game data                                          |
 | Sheetifier        | ✅    | Parses game data and imports all strings into Google Sheets         |
-| Translator        | ✅    | (optional) Translates strings using LLMs                            |
-| Checker           | TO DO | (optional) Checks for abnormalities in the strings                  |
+| Translator        | ✅    | (optional) Translates dialogues using LLMs                          |
+| Checker           | ✅    | (optional) Checks for abnormalities in the translated dialogues     |
 | Desheetifier      | ✅    | Pulls all strings from Google Sheets and writes them into game data | 
 | Boom Boom Build   | ✅    | Imports required game data, creates distribution packages           |
 
@@ -35,10 +35,10 @@ Exports required game data from `GAME_DIR` to `RES_DIR` using [UnityPy](https://
 Parses exported game data from `RES_DIR` into human-readable format, imports it into the pre-defined Google Sheets document (`SPREADSHEET_ID` and the rest). If there already were some strings, it appends only missing strings. The function tries to sort the strings into chapters (see [chapter definitions](data/chapter-definitions.json)). The name is non-negotiable.
 
 ### Translator
-*(optional)* Automatically or semi-automatically translates untranslated strings from Google Sheets using vocabulary and context. Marks translated strings with red, because you probably don't want to have unedited machine translation.
+*(optional)* Automatically or semi-automatically translates untranslated dialogues from Google Sheets using vocabulary and context. Marks translated strings with red, because you probably don't want to have unedited machine translation.
 
 ### Checker
-*(optional)* Checks for abnormalities in the strings using LLMs, creating a report of what was found.
+*(optional)* Checks for anomalies in the dialogues using LLMs, creating a report of what was found.
 
 ### Desheetifier
 Pulls translated strings from Google Sheets and inserts them into the game data in `RES_DIR`.

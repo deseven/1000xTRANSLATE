@@ -101,7 +101,7 @@ const variables = {
         required_by: ['function:3-translator']
     },
     LANG_TO: {
-        required_by: ['function:3-translator']
+        required_by: ['function:3-translator', 'function:4-checker']
     },
     EXAMPLE_HI: {
         required_by: ['function:3-translator']
@@ -273,7 +273,7 @@ async function cleanup(all = false) {
     }
 
     // Clean up data directory
-    const dataDir = path.join(process.cwd(), 'data');
+    const dataDir = path.join(process.cwd(), 'Data');
     if (fs.existsSync(dataDir)) {
         console.log('Cleaning up data directory...');
         const dataFiles = fs.readdirSync(dataDir);
@@ -445,19 +445,28 @@ async function main() {
             }
             break;
 
-        case 'check':
-            if (args.length > 0) {
-                for (const dir of args) {
-                    console.log(chalk.blue(`\nChecking directory: ${dir}`));
-                    const venvPath = path.join(dir, '.venv');
-                    const nodeModulesPath = path.join(dir, 'node_modules');
+        case 'validate':
+            const parentDirs = ['Functions', 'Misc'];
+            console.log('## Dependency Checks ##');
+            for (const parentDir of parentDirs) {
+                const parentPath = path.join(process.cwd(), parentDir);
+                if (fs.existsSync(parentPath)) {
+                    const subDirs = fs.readdirSync(parentPath).filter(dir => fs.statSync(path.join(parentPath, dir)).isDirectory());
+                    for (const dir of subDirs) {
+                        const dirPath = path.join(parentPath, dir);
+                        const venvPath = path.join(dirPath, '.venv');
+                        const nodeModulesPath = path.join(dirPath, 'node_modules');
 
-                    if (!fs.existsSync(venvPath) && !fs.existsSync(nodeModulesPath)) {
-                        console.log(chalk.red('[CRITICAL]'), 'Dependencies not found, please run appropriate install command first.');
-                        process.exit(1);
+                        if (!fs.existsSync(venvPath) && !fs.existsSync(nodeModulesPath)) {
+                            console.log(chalk.red('[CRITICAL]'), dir, 'Dependencies not found, please run', chalk.blue('npm run init'), 'first.');
+                            process.exit(1);
+                        } else {
+                            console.log(chalk.green('[OK]'), dir);
+                        }
                     }
                 }
             }
+            console.log();
             await checkEnvironment();
             break;
 
@@ -541,7 +550,7 @@ async function main() {
             break;
 
         default:
-            console.error(chalk.red('Command not understood. Available commands: clean, check, install:[all|function|tool], run:[function|tool]'));
+            console.error(chalk.red('Command not understood. Available commands: clean, validate, install:[all|function|tool], run:[function|tool]'));
             process.exit(1);
     }
 }
