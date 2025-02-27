@@ -2,7 +2,6 @@ const dotenv = require('dotenv');
 const fs = require('fs');
 const path = require('path');
 const ThousandXspreadsheeT = require('../../Misc/ThousandXspreadsheeT');
-const sleep = ms => new Promise(res => setTimeout(res, ms));
 
 dotenv.config({ path: '.env' });
 const resDir = path.isAbsolute(process.env.RES_DIR)
@@ -253,7 +252,8 @@ const files = {
     actors: path.join(__dirname, '../../Data/parsed_actors.json'),
     quests: path.join(__dirname, '../../Data/parsed_quests.json'),
     dialogues: path.join(__dirname, '../../Data/parsed_dialogues.json'),
-    system: path.join(__dirname, '../../Data/parsed_terms.json')
+    system: path.join(__dirname, '../../Data/parsed_terms.json'),
+    strings: path.join(resDir, 'strings.json')
 };
 
 async function main() {
@@ -264,7 +264,8 @@ async function main() {
             ACTORS_SHEET_NAME: process.env.ACTORS_SHEET_NAME,
             QUESTS_SHEET_NAME: process.env.QUESTS_SHEET_NAME,
             SYSTEM_SHEET_NAME: process.env.SYSTEM_SHEET_NAME,
-            DIALOGUES_SHEET_NAME: process.env.DIALOGUES_SHEET_NAME
+            DIALOGUES_SHEET_NAME: process.env.DIALOGUES_SHEET_NAME,
+            STRINGS_SHEET_NAME: process.env.STRINGS_SHEET_NAME
         });
 
         // Load and process actors
@@ -276,8 +277,6 @@ async function main() {
         }
         await spreadsheet.replaceActors(actorsStrings);
 
-        await sleep(1000); // thx google, in 2025 your own library has no clue about your rate limits
-
         // Load and process quests
         console.log("Uploading quests...")
         const questsData = JSON.parse(fs.readFileSync(files.quests, 'utf8'));
@@ -287,8 +286,6 @@ async function main() {
         }
         await spreadsheet.replaceQuests(questsStrings);
 
-        await sleep(1000);
-
         // Load and process system terms
         console.log("Uploading system...")
         const systemData = JSON.parse(fs.readFileSync(files.system, 'utf8'));
@@ -297,8 +294,6 @@ async function main() {
             systemStrings[`System/${key}`] = { original: value };
         }
         await spreadsheet.replaceSystem(systemStrings);
-
-        await sleep(1000);
 
         // Load and process dialogues
         console.log("Uploading dialogues...")
@@ -330,8 +325,6 @@ async function main() {
         }
         await spreadsheet.replaceDialogues(dialoguesStrings);
 
-        await sleep(1000);
-
         // Process and replace Chars vocab
         console.log("Uploading unique chars to vocabulary...")
         const sortedActorTexts = Array.from(actorTexts).sort();
@@ -341,11 +334,24 @@ async function main() {
         });
         await spreadsheet.replaceVocab('Chars', vocabStrings);
 
+        // Load and process strings
+        console.log("Uploading strings...")
+        const stringsData = JSON.parse(fs.readFileSync(files.strings, 'utf8'));
+        const stringsStrings = {};
+        const systemValues = new Set(Object.values(systemStrings).map(obj => obj.original));
+        for (const str of stringsData) {
+            if (!systemValues.has(str) && !/^[+-]?\d+$/.test(str)) {
+                stringsStrings[str] = null;
+            }
+        }
+        await spreadsheet.replaceStrings(stringsStrings);
+
         console.log('All data processed and uploaded successfully.');
     } catch (error) {
         console.error('Error:', error);
         process.exit(1);
     }
+
 }
 
 main();

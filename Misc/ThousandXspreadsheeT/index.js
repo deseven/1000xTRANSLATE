@@ -15,94 +15,126 @@ class ThousandXspreadsheeT {
             actors: config.ACTORS_SHEET_NAME,
             quests: config.QUESTS_SHEET_NAME,
             system: config.SYSTEM_SHEET_NAME,
-            dialogues: config.DIALOGUES_SHEET_NAME
+            dialogues: config.DIALOGUES_SHEET_NAME,
+            strings: config.STRINGS_SHEET_NAME
         };
     }
 
+    async #executeWithRetry(requestFn) {
+        const maxTries = 10;
+        for (let attempt = 1; attempt <= maxTries; attempt++) {
+            try {
+                return await requestFn();
+            } catch (error) {
+                if (this.#isQuotaError(error)) {
+                    if (attempt === maxTries) {
+                        console.warn('Max retries reached for quota exceeded error. Giving up.');
+                        throw error;
+                    }
+                    const delayMs = 1000 * Math.pow(2, attempt - 1);
+                    console.warn(`Quota exceeded. Retrying in ${delayMs}ms (attempt ${attempt}/${maxTries})`);
+                    await new Promise(resolve => setTimeout(resolve, delayMs));
+                } else {
+                    throw error;
+                }
+            }
+        }
+    }
+
+    #isQuotaError(error) {
+        return error.response &&
+            (error.response.status === 429 || error.response.status === 403) &&
+            error.message.includes('Quota exceeded');
+    }
+
     async #getSheetData(sheetName, columns) {
-        // If columns is "A:C", this will create a range like "Actors!A2:C"
         const endColumn = columns.split(':')[1];
         const range = `${sheetName}!A2:${endColumn}`;
-        const response = await this.sheets.spreadsheets.values.get({
-            spreadsheetId: this.spreadsheetId,
-            range
-        });
+        const response = await this.#executeWithRetry(() => 
+            this.sheets.spreadsheets.values.get({
+                spreadsheetId: this.spreadsheetId,
+                range
+            })
+        );
         return response.data.values || [];
     }
 
     async #appendRows(sheetName, rows) {
         if (rows.length === 0) return;
     
-        // First, append the rows
-        const appendResponse = await this.sheets.spreadsheets.values.append({
-            spreadsheetId: this.spreadsheetId,
-            range: `${sheetName}!A:D`,
-            valueInputOption: 'USER_ENTERED',
-            insertDataOption: 'INSERT_ROWS',
-            requestBody: {
-                values: rows
-            }
-        });
-    
-        // Get the sheet ID
+        const appendResponse = await this.#executeWithRetry(() => 
+            this.sheets.spreadsheets.values.append({
+                spreadsheetId: this.spreadsheetId,
+                range: `${sheetName}!A:D`,
+                valueInputOption: 'USER_ENTERED',
+                insertDataOption: 'INSERT_ROWS',
+                requestBody: {
+                    values: rows
+                }
+            })
+        );
+
         const sheetId = await this.#getSheetId(sheetName);
-        
-        // Get the range where rows were inserted
         const updatedRange = appendResponse.data.updates.updatedRange;
         const [startRow, endRow] = updatedRange.match(/\d+/g).map(Number);
-    
-        // Clear formatting for the inserted rows
-        await this.sheets.spreadsheets.batchUpdate({
-            spreadsheetId: this.spreadsheetId,
-            requestBody: {
-                requests: [{
-                    repeatCell: {
-                        range: {
-                            sheetId: sheetId,
-                            startRowIndex: startRow - 1,  // Convert to 0-based index
-                            endRowIndex: endRow,          // Convert to 0-based index
-                            startColumnIndex: 0,
-                            endColumnIndex: 4             // A through D
-                        },
-                        cell: {
-                            userEnteredFormat: {
-                                backgroundColor: { red: 1, green: 1, blue: 1 },  // White
-                                textFormat: {
-                                    fontSize: 10,
-                                    bold: false
+
+        await this.#executeWithRetry(() =>
+            this.sheets.spreadsheets.batchUpdate({
+                spreadsheetId: this.spreadsheetId,
+                requestBody: {
+                    requests: [{
+                        repeatCell: {
+                            range: {
+                                sheetId: sheetId,
+                                startRowIndex: startRow - 1,
+                                endRowIndex: endRow,
+                                startColumnIndex: 0,
+                                endColumnIndex: 4
+                            },
+                            cell: {
+                                userEnteredFormat: {
+                                    backgroundColor: { red: 1, green: 1, blue: 1 },
+                                    textFormat: {
+                                        fontSize: 10,
+                                        bold: false
+                                    }
                                 }
-                            }
-                        },
-                        fields: 'userEnteredFormat(backgroundColor,textFormat)'
-                    }
-                }]
-            }
-        });
-    
+                            },
+                            fields: 'userEnteredFormat(backgroundColor,textFormat)'
+                        }
+                    }]
+                }
+            })
+        );
+
         return appendResponse;
     }
 
     async #updateRows(sheetName, updates) {
         if (updates.length === 0) return;
     
-        const response = await this.sheets.spreadsheets.values.batchUpdate({
-            spreadsheetId: this.spreadsheetId,
-            requestBody: {
-                valueInputOption: 'USER_ENTERED',
-                data: updates.map(update => ({
-                    range: `${sheetName}!${update.range}`,
-                    values: [update.values]
-                }))
-            }
-        });
+        const response = await this.#executeWithRetry(() =>
+            this.sheets.spreadsheets.values.batchUpdate({
+                spreadsheetId: this.spreadsheetId,
+                requestBody: {
+                    valueInputOption: 'USER_ENTERED',
+                    data: updates.map(update => ({
+                        range: `${sheetName}!${update.range}`,
+                        values: [update.values]
+                    }))
+                }
+            })
+        );
         return response;
     }
 
     async #getSheetId(sheetName) {
-        const response = await this.sheets.spreadsheets.get({
-            spreadsheetId: this.spreadsheetId,
-            fields: 'sheets.properties'
-        });
+        const response = await this.#executeWithRetry(() =>
+            this.sheets.spreadsheets.get({
+                spreadsheetId: this.spreadsheetId,
+                fields: 'sheets.properties'
+            })
+        );
 
         const sheet = response.data.sheets.find(s =>
             s.properties.title === sheetName
@@ -117,26 +149,21 @@ class ThousandXspreadsheeT {
         return { red: r, green: g, blue: b };
     }
 
-    // Vocab methods
-    async getVocab(vocabName) {
-        const sheetName = `VOCAB:${vocabName}`;
+    async #getKeyValueData(sheetName) {
         const rows = await this.#getSheetData(sheetName, 'A:B');
-
         return rows.reduce((acc, [key, value]) => {
             if (key) acc[key] = value || '';
             return acc;
         }, {});
     }
 
-    async appendVocab(vocabName, strings) {
-        const sheetName = `VOCAB:${vocabName}`;
+    async #appendKeyValueData(sheetName, strings) {
         const rows = Object.entries(strings).map(([key, value]) => [key, value]);
         await this.#appendRows(sheetName, rows);
     }
 
-    async replaceVocab(vocabName, strings) {
-        const sheetName = `VOCAB:${vocabName}`;
-        const existing = await this.getVocab(vocabName);
+    async #replaceKeyValueData(sheetName, strings) {
+        const existing = await this.#getKeyValueData(sheetName);
         const updates = [];
         const toAppend = {};
 
@@ -157,11 +184,37 @@ class ThousandXspreadsheeT {
 
         await this.#updateRows(sheetName, updates);
         if (Object.keys(toAppend).length > 0) {
-            await this.appendVocab(vocabName, toAppend);
+            await this.#appendKeyValueData(sheetName, toAppend);
         }
     }
 
-    // Helper for getting three-column data (Actors, Quests, System)
+    async getVocab(vocabName) {
+        const sheetName = `VOCAB:${vocabName}`;
+        return this.#getKeyValueData(sheetName);
+    }
+
+    async appendVocab(vocabName, strings) {
+        const sheetName = `VOCAB:${vocabName}`;
+        await this.#appendKeyValueData(sheetName, strings);
+    }
+
+    async replaceVocab(vocabName, strings) {
+        const sheetName = `VOCAB:${vocabName}`;
+        await this.#replaceKeyValueData(sheetName, strings);
+    }
+
+    async getStrings() {
+        return this.#getKeyValueData(this.sheetNames.strings);
+    }
+
+    async appendStrings(strings) {
+        await this.#appendKeyValueData(this.sheetNames.strings, strings);
+    }
+
+    async replaceStrings(strings) {
+        await this.#replaceKeyValueData(this.sheetNames.strings, strings);
+    }
+
     async #getThreeColumnData(sheetName) {
         const rows = await this.#getSheetData(sheetName, 'A:C');
 
@@ -176,7 +229,6 @@ class ThousandXspreadsheeT {
         }, {});
     }
 
-    // Helper for replacing three-column data
     async #replaceThreeColumnData(sheetName, strings) {
         const existing = await this.#getThreeColumnData(sheetName);
         const updates = [];
@@ -207,7 +259,6 @@ class ThousandXspreadsheeT {
         }
     }
 
-    // Helper for appending three-column data
     async #appendThreeColumnData(sheetName, strings) {
         const rows = Object.entries(strings).map(([key, data]) => [
             key,
@@ -217,7 +268,6 @@ class ThousandXspreadsheeT {
         await this.#appendRows(sheetName, rows);
     }
 
-    // Actors methods
     async getActors() {
         return this.#getThreeColumnData(this.sheetNames.actors);
     }
@@ -230,7 +280,6 @@ class ThousandXspreadsheeT {
         await this.#replaceThreeColumnData(this.sheetNames.actors, strings);
     }
 
-    // Quests methods
     async getQuests() {
         return this.#getThreeColumnData(this.sheetNames.quests);
     }
@@ -243,7 +292,6 @@ class ThousandXspreadsheeT {
         await this.#replaceThreeColumnData(this.sheetNames.quests, strings);
     }
 
-    // System methods
     async getSystem() {
         return this.#getThreeColumnData(this.sheetNames.system);
     }
@@ -256,7 +304,6 @@ class ThousandXspreadsheeT {
         await this.#replaceThreeColumnData(this.sheetNames.system, strings);
     }
 
-    // Dialogues methods
     async getDialogues() {
         const rows = await this.#getSheetData(this.sheetNames.dialogues, 'A:D');
 
@@ -316,26 +363,19 @@ class ThousandXspreadsheeT {
     async markDialogues(keys, color, field) {
         if (keys.length === 0) return;
 
-        // Get the sheet ID (needed for formatting requests)
         const sheetId = await this.#getSheetId(this.sheetNames.dialogues);
         if (!sheetId) throw new Error('Dialogues sheet not found');
 
-        // Get existing dialogues to find row numbers
         const dialogues = await this.getDialogues();
-
-        // Determine which column to color (0-based index)
         const columnIndex = field === 'original' ? 2 : 3;
 
-        // Create formatting requests for each found key
         const requests = keys.map(key => {
             const existingKey = Object.keys(dialogues).find(
                 k => k.toLowerCase() === key.toLowerCase()
             );
             if (!existingKey) return null;
 
-            // Calculate row index (0-based, accounting for header)
             const rowIndex = Object.keys(dialogues).indexOf(existingKey) + 1;
-
             return {
                 updateCells: {
                     range: {
@@ -355,13 +395,15 @@ class ThousandXspreadsheeT {
                     fields: 'userEnteredFormat.backgroundColor'
                 }
             };
-        }).filter(Boolean); // Remove null entries for keys that weren't found
+        }).filter(Boolean);
 
         if (requests.length > 0) {
-            await this.sheets.spreadsheets.batchUpdate({
-                spreadsheetId: this.spreadsheetId,
-                requestBody: { requests }
-            });
+            await this.#executeWithRetry(() =>
+                this.sheets.spreadsheets.batchUpdate({
+                    spreadsheetId: this.spreadsheetId,
+                    requestBody: { requests }
+                })
+            );
         }
     }
 }

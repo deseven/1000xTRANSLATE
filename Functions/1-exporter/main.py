@@ -28,6 +28,7 @@ streaming_assets_path = os.path.join('StreamingAssets', 'aa', 'StandaloneWindows
 bundle_dir = os.path.join(data_dir, streaming_assets_path)
 dialogue_bundles = [f for f in os.listdir(bundle_dir) if f.endswith('.bundle') and '_other_' in f]
 texture_bundles = [f for f in os.listdir(bundle_dir) if f.endswith('.bundle') and '_texture_' in f]
+scene_bundles = [f for f in os.listdir(bundle_dir) if f.endswith('.bundle') and '_scenes_' in f]
 
 with open(os.path.join(os.path.dirname(__file__), os.path.join('../', '../', 'Data/I2.loc.typetree.json')), 'r', encoding='utf-8') as f:
     I2LocTypetree = json.load(f)
@@ -53,6 +54,30 @@ for obj in env.objects:
             with open(os.path.join(res_dir, "I2Languages.json"), 'w', encoding='utf-8') as f:
                 f.write(json_data)
             break
+
+strings = []
+for bundle_name in scene_bundles:
+    file_path = os.path.join(bundle_dir, bundle_name)
+    print(f"Processing {file_path}")
+    env = UnityPy.load(file_path)
+    bundle_dest = os.path.join(res_dir, os.path.basename(bundle_name))
+
+    for obj in env.objects:
+            if obj.type.name == 'MonoBehaviour':
+                if obj.serialized_type.node:
+                    data = obj.read()
+                    tree = obj.read_typetree()
+                    if 'm_Script' in tree:
+                        try:
+                            script = data.m_Script.read()
+                            if script.m_ClassName == 'TextMeshPro' and 'm_text' in tree:
+                                strings.append(tree['m_text'].replace('\t', '\\t').replace('\n', '\\n'))
+                        except:
+                            continue
+
+strings = sorted(set(strings))
+with open(os.path.join(res_dir, "strings.json"), 'w', encoding='utf-8') as f:
+    f.write(json.dumps(strings, indent=4, ensure_ascii=False))
 
 for bundle_name in texture_bundles:
     file_path = os.path.join(bundle_dir, bundle_name)

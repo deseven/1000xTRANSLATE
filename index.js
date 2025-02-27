@@ -40,6 +40,9 @@ const variables = {
     DIALOGUES_SHEET_NAME: {
         required_by: ['function:2-sheetifier', 'function:3-translator', 'function:4-checker', 'function:5-desheetifier']
     },
+    STRINGS_SHEET_NAME: {
+        required_by: ['function:2-sheetifier', 'function:5-desheetifier']
+    },
     GAME_DATA_DIR: {
         required_by: ['function:1-exporter', 'function:6-boom-boom-build'],
         check: 'dirExistsAndNotEmpty',
