@@ -55,7 +55,7 @@ for obj in env.objects:
                 f.write(json_data)
             break
 
-strings = []
+strings = {}
 for bundle_name in scene_bundles:
     file_path = os.path.join(bundle_dir, bundle_name)
     print(f"Processing {file_path}")
@@ -63,19 +63,19 @@ for bundle_name in scene_bundles:
     bundle_dest = os.path.join(res_dir, os.path.basename(bundle_name))
 
     for obj in env.objects:
-            if obj.type.name == 'MonoBehaviour':
-                if obj.serialized_type.node:
-                    data = obj.read()
-                    tree = obj.read_typetree()
-                    if 'm_Script' in tree:
-                        try:
-                            script = data.m_Script.read()
-                            if script.m_ClassName == 'TextMeshPro' and 'm_text' in tree:
-                                strings.append(tree['m_text'].replace('\t', '\\t').replace('\n', '\\n'))
-                        except:
-                            continue
+        if obj.type.name == 'MonoBehaviour':
+            if obj.serialized_type.node:
+                data = obj.read()
+                tree = obj.read_typetree()
+                if 'm_Script' in tree:
+                    try:
+                        script = data.m_Script.read()
+                        if script.m_ClassName == 'TextMeshPro' and 'm_text' in tree:
+                            strings[tree['m_text'].replace('\t', '\\t').replace('\n', '\\n')] = ""
+                    except:
+                        continue
 
-strings = sorted(set(strings))
+strings = dict(sorted(strings.items()))
 with open(os.path.join(res_dir, "strings.json"), 'w', encoding='utf-8') as f:
     f.write(json.dumps(strings, indent=4, ensure_ascii=False))
 

@@ -29,12 +29,16 @@ streaming_assets_path = os.path.join('StreamingAssets', 'aa', 'StandaloneWindows
 bundle_dir = os.path.join(data_dir, streaming_assets_path)
 dialogue_bundles = [f for f in os.listdir(bundle_dir) if f.endswith('.bundle') and '_other_' in f]
 texture_bundles = [f for f in os.listdir(bundle_dir) if f.endswith('.bundle') and '_texture_' in f]
+scene_bundles = [f for f in os.listdir(bundle_dir) if f.endswith('.bundle') and '_scenes_' in f]
 
 with open(os.path.join('../','../', 'Data', 'I2.loc.typetree.json'), 'r', encoding='utf-8') as f:
     I2LocTypetree = json.load(f)
 
 with open(os.path.join(res_dir, 'I2Languages.json'), 'r', encoding='utf-8') as f:
     I2Languages = json.load(f)
+
+with open(os.path.join(res_dir, 'strings.json'), 'r', encoding='utf-8') as f:
+    strings = json.load(f)
 
 with open(os.path.join(os.path.dirname(__file__), '../', '../', 'Data/textures.list'), 'r', encoding='utf-8') as f:
     textures = [line.strip() for line in f.readlines()]
@@ -60,8 +64,39 @@ for obj in env.objects:
                 f.write(env.file.save(packer="original"))
             break
 
+for bundle_name in scene_bundles:
+    needs_saving = False
+    file_path = os.path.join(bundle_dir, bundle_name)
+    print(f"Processing {file_path}")
+    env = UnityPy.load(file_path)
+    bundle_dest = os.path.join(res_dir, os.path.basename(bundle_name))
+
+    for obj in env.objects:
+        if obj.type.name == 'MonoBehaviour':
+            if obj.serialized_type.node:
+                data = obj.read()
+                tree = obj.read_typetree()
+                if 'm_Script' in tree:
+                    try:
+                        script = data.m_Script.read()
+                    except:
+                        continue
+                    if script.m_ClassName == 'TextMeshPro' and 'm_text' in tree:
+                        strings_key = tree['m_text'].replace('\t', '\\t').replace('\n', '\\n')
+                        if strings_key in strings and strings[strings_key] != "":
+                            tree['m_text'] = strings[strings_key].replace('\\t', '\t').replace('\\n', '\n')
+                            obj.save_typetree(tree)
+                            needs_saving = True
+    
+    if needs_saving:
+        os.makedirs(os.path.join(out_dir, streaming_assets_path, os.path.dirname(bundle_name)), exist_ok=True)
+        with open(os.path.join(out_dir, streaming_assets_path, bundle_name), "wb") as f:
+            f.write(env.file.save(packer="original"))
+                            
+
 if overrides_dir:
     for bundle_name in texture_bundles:
+        needs_saving = False
         file_path = os.path.join(bundle_dir, bundle_name)
         print(f"Processing {file_path}")
         env = UnityPy.load(file_path)
@@ -78,9 +113,12 @@ if overrides_dir:
                         img = Image.open(override)
                         data.image = img
                         data.save()
-                        os.makedirs(os.path.join(out_dir, streaming_assets_path, os.path.dirname(bundle_name)), exist_ok=True)
-                        with open(os.path.join(out_dir, streaming_assets_path, bundle_name), "wb") as f:
-                            f.write(env.file.save(packer="original"))
+                        needs_saving = True
+
+        if needs_saving:
+            os.makedirs(os.path.join(out_dir, streaming_assets_path, os.path.dirname(bundle_name)), exist_ok=True)
+            with open(os.path.join(out_dir, streaming_assets_path, bundle_name), "wb") as f:
+                f.write(env.file.save(packer="original"))
 
 for bundle_name in dialogue_bundles:
     file_path = os.path.join(bundle_dir, bundle_name)

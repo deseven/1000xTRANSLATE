@@ -10,5 +10,6 @@
   "description": "",
   "dependencies": {
     "openai": "^4.85.2"
-  }
+  },
+  "type": "commonjs"
 }

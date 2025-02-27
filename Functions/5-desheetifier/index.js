@@ -19,19 +19,22 @@ let stats = {
         actors: 0,
         quests: 0,
         system: 0,
-        dialogues: 0
+        dialogues: 0,
+        strings: 0
     },
     replaced: {
         actors: 0,
         quests: 0,
         system: 0,
-        dialogues: 0
+        dialogues: 0,
+        strings: 0
     },
     emptyFallbacks: {
         actors: 0,
         quests: 0,
         system: 0,
-        dialogues: 0
+        dialogues: 0,
+        strings: 0
     }
 };
 
@@ -40,7 +43,8 @@ let unmatchedStrings = {
     actors: new Set(),
     quests: new Set(),
     system: new Set(),
-    dialogues: new Set()
+    dialogues: new Set(),
+    strings: new Set()
 };
 
 function getAllJsonFiles(dir, files = []) {
@@ -64,28 +68,32 @@ async function main() {
             ACTORS_SHEET_NAME: process.env.ACTORS_SHEET_NAME,
             QUESTS_SHEET_NAME: process.env.QUESTS_SHEET_NAME,
             SYSTEM_SHEET_NAME: process.env.SYSTEM_SHEET_NAME,
-            DIALOGUES_SHEET_NAME: process.env.DIALOGUES_SHEET_NAME
+            DIALOGUES_SHEET_NAME: process.env.DIALOGUES_SHEET_NAME,
+            STRINGS_SHEET_NAME: process.env.STRINGS_SHEET_NAME
         });
 
         // Get all translations from spreadsheet
         console.log('Loading translations from spreadsheet...');
-        const [actors, quests, system, dialogues] = await Promise.all([
+        const [actors, quests, system, dialogues, strings] = await Promise.all([
             spreadsheet.getActors(),
             spreadsheet.getQuests(),
             spreadsheet.getSystem(),
-            spreadsheet.getDialogues()
+            spreadsheet.getDialogues(),
+            spreadsheet.getStrings(),
         ]);
 
         stats.spreadsheet.actors = Object.keys(actors).length;
         stats.spreadsheet.quests = Object.keys(quests).length;
         stats.spreadsheet.system = Object.keys(system).length;
         stats.spreadsheet.dialogues = Object.keys(dialogues).length;
+        stats.spreadsheet.strings = Object.keys(strings).length;
 
         // Initialize unmatched sets
         unmatchedStrings.actors = new Set(Object.keys(actors));
         unmatchedStrings.quests = new Set(Object.keys(quests));
         unmatchedStrings.system = new Set(Object.keys(system));
         unmatchedStrings.dialogues = new Set(Object.keys(dialogues));
+        unmatchedStrings.strings = new Set(Object.keys(strings));
 
         const jsonFiles = getAllJsonFiles(resDir);
 
@@ -122,6 +130,7 @@ async function main() {
         // Process other JSON files
         for (const file of jsonFiles) {
             if (path.basename(file) === 'I2Languages.json') continue;
+            if (path.basename(file) === 'strings.json') continue;
 
             console.log(`Processing ${file}...`);
             const data = JSONbig.parse(fs.readFileSync(file, 'utf-8'));
@@ -252,6 +261,29 @@ async function main() {
             fs.writeFileSync(file, JSONbig.stringify(data, null, 2));
         }
 
+        // Process strings.json
+        const stringsFile = jsonFiles.find(file => path.basename(file) === 'strings.json');
+        if (stringsFile) {
+            console.log(`Processing ${stringsFile}...`);
+            const data = JSON.parse(fs.readFileSync(stringsFile, 'utf-8'));
+
+            Object.keys(data).forEach(key => {
+                if (strings[key]) {
+                    const translation = strings[key];
+                    if (translation) {
+                        data[key] = translation;
+                        stats.replaced.strings++;
+                    } else {
+                        stats.emptyFallbacks.strings++;
+                        console.warn(`Warning: Empty translation for string: ${key}`);
+                    }
+                }
+                unmatchedStrings.strings.delete(key); // we don't need to track these
+            });
+
+            fs.writeFileSync(stringsFile, JSON.stringify(data, null, 2));
+        }
+
         // Print statistics
         console.log('\nProcessing completed!\n');
         console.log('Statistics:');
@@ -260,24 +292,28 @@ async function main() {
         console.log(`- Quests: ${stats.spreadsheet.quests}`);
         console.log(`- System: ${stats.spreadsheet.system}`);
         console.log(`- Dialogues: ${stats.spreadsheet.dialogues}`);
+        console.log(`- Strings: ${stats.spreadsheet.strings}`);
         
         console.log('\nReplaced in files:');
         console.log(`- Actors: ${stats.replaced.actors}`);
         console.log(`- Quests: ${stats.replaced.quests}`);
         console.log(`- System: ${stats.replaced.system}`);
         console.log(`- Dialogues: ${stats.replaced.dialogues}`);
+        console.log(`- Strings: ${stats.replaced.strings}`);
 
         console.log('\nEmpty translations (skipped):');
         console.log(`- Actors: ${stats.emptyFallbacks.actors}`);
         console.log(`- Quests: ${stats.emptyFallbacks.quests}`);
         console.log(`- System: ${stats.emptyFallbacks.system}`);
         console.log(`- Dialogues: ${stats.emptyFallbacks.dialogues}`);
+        console.log(`- Strings: ${stats.emptyFallbacks.strings}`);
 
         console.log('\nStrings not found in files:');
         console.log(`- Actors: ${unmatchedStrings.actors.size}`);
         console.log(`- Quests: ${unmatchedStrings.quests.size}`);
         console.log(`- System: ${unmatchedStrings.system.size}`);
         console.log(`- Dialogues: ${unmatchedStrings.dialogues.size}`);
+        console.log(`- Strings: ${unmatchedStrings.strings.size}`);
 
         if (unmatchedStrings.actors.size > 0) {
             console.log('\nUnmatched actors:', Array.from(unmatchedStrings.actors));
@@ -290,6 +326,9 @@ async function main() {
         }
         if (unmatchedStrings.dialogues.size > 0) {
             console.log('\nUnmatched dialogues:', Array.from(unmatchedStrings.dialogues));
+        }
+        if (unmatchedStrings.strings.size > 0) {
+            console.log('\nUnmatched strings:', Array.from(unmatchedStrings.strings));
         }
 
     } catch (error) {

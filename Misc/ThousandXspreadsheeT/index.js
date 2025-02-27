@@ -178,7 +178,7 @@ class ThousandXspreadsheeT {
                     });
                 }
             } else {
-                toAppend[key] = key;
+                toAppend[key] = value;
             }
         }
 

@@ -339,7 +339,7 @@ async function main() {
         const stringsData = JSON.parse(fs.readFileSync(files.strings, 'utf8'));
         const stringsStrings = {};
         const systemValues = new Set(Object.values(systemStrings).map(obj => obj.original));
-        for (const str of stringsData) {
+        for (const [str, value] of Object.entries(stringsData)) {
             if (!systemValues.has(str) && !/^[+-]?\d+$/.test(str)) {
                 stringsStrings[str] = null;
             }

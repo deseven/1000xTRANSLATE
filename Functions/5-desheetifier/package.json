@@ -11,5 +11,6 @@
   "dependencies": {
     "dotenv": "^16.4.7",
     "json-bigint": "^1.0.0"
-  }
+  },
+  "type": "commonjs"
 }
