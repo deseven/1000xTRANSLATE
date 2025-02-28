@@ -3,9 +3,12 @@ import json
 import UnityPy
 from PIL import Image
 from dotenv import load_dotenv
+from tqdm import tqdm
 
+tqdm_format = "{desc:<21}{percentage:3.0f}%|{bar}{r_bar}"
 load_dotenv('../../.env')
 UnityPy.config.FALLBACK_UNITY_VERSION = os.getenv('GAME_UNITY_VERSION')
+UnityPy.config.FALLBACK_VERSION_WARNED = True
 
 # Handle both relative and absolute paths
 def get_path(env_var):
@@ -20,6 +23,11 @@ data_dir = get_path('GAME_DATA_DIR')
 res_dir = get_path('RES_DIR')
 overrides_dir = get_path('OVERRIDES_DIR')
 out_dir = os.path.join(get_path('OUT_DIR'), '1000xRESIST_Data')
+
+strings_num = 0
+textures_num = 0
+dialogues_num = 0
+bundles_num = 0
 
 if os.getenv('UNITYPY_USE_PYTHON_PARSER') == 'true':
     from UnityPy.helpers import TypeTreeHelper
@@ -43,17 +51,15 @@ with open(os.path.join(res_dir, 'strings.json'), 'r', encoding='utf-8') as f:
 with open(os.path.join(os.path.dirname(__file__), '../', '../', 'Data/textures.list'), 'r', encoding='utf-8') as f:
     textures = [line.strip() for line in f.readlines()]
 
+print('Importing I2Languages: ',end='')
 file_path = os.path.join(data_dir, 'resources.assets')
-print(f"Processing {file_path}")
 env = UnityPy.load(file_path)
 found = False
-
 for obj in env.objects:
     if obj.type.name == 'MonoBehaviour':
         try:
             data = obj.read(check_read=False)
             if getattr(data, 'm_Name') == "I2Languages":
-                print('Importing I2Languages')
                 found = True
         except:
             continue
@@ -62,12 +68,16 @@ for obj in env.objects:
             os.makedirs(out_dir, exist_ok=True)
             with open(os.path.join(out_dir, 'resources.assets'), "wb") as f:
                 f.write(env.file.save(packer="original"))
+            print('1/1')
             break
 
-for bundle_name in scene_bundles:
+if not found:
+    print('failed')
+    exit(1)
+
+for bundle_name in tqdm(iterable=scene_bundles, desc='Importing strings:', bar_format=tqdm_format):
     needs_saving = False
     file_path = os.path.join(bundle_dir, bundle_name)
-    print(f"Processing {file_path}")
     env = UnityPy.load(file_path)
     bundle_dest = os.path.join(res_dir, os.path.basename(bundle_name))
 
@@ -87,18 +97,19 @@ for bundle_name in scene_bundles:
                             tree['m_text'] = strings[strings_key].replace('\\t', '\t').replace('\\n', '\n')
                             obj.save_typetree(tree)
                             needs_saving = True
+                            strings_num += 1
     
     if needs_saving:
         os.makedirs(os.path.join(out_dir, streaming_assets_path, os.path.dirname(bundle_name)), exist_ok=True)
         with open(os.path.join(out_dir, streaming_assets_path, bundle_name), "wb") as f:
             f.write(env.file.save(packer="original"))
+        bundles_num += 1
                             
 
 if overrides_dir:
-    for bundle_name in texture_bundles:
+    for bundle_name in tqdm(iterable=texture_bundles, desc='Importing textures:', bar_format=tqdm_format):
         needs_saving = False
         file_path = os.path.join(bundle_dir, bundle_name)
-        print(f"Processing {file_path}")
         env = UnityPy.load(file_path)
         bundle_dest = os.path.join(res_dir, os.path.basename(bundle_name))
 
@@ -114,15 +125,17 @@ if overrides_dir:
                         data.image = img
                         data.save()
                         needs_saving = True
+                        textures_num += 1
 
         if needs_saving:
             os.makedirs(os.path.join(out_dir, streaming_assets_path, os.path.dirname(bundle_name)), exist_ok=True)
             with open(os.path.join(out_dir, streaming_assets_path, bundle_name), "wb") as f:
                 f.write(env.file.save(packer="original"))
+            bundles_num += 1
 
-for bundle_name in dialogue_bundles:
+for bundle_name in tqdm(iterable=dialogue_bundles, desc='Importing dialogues:', bar_format=tqdm_format):
+    needs_saving = False
     file_path = os.path.join(bundle_dir, bundle_name)
-    print(f"Processing {file_path}")
     env = UnityPy.load(file_path)
     bundle_dest = os.path.join(res_dir, os.path.basename(bundle_name))
 
@@ -139,7 +152,6 @@ for bundle_name in dialogue_bundles:
             if script.m_ClassName == 'DialogueDatabase':
                 # check for typetree availability
                 if not data.object_reader.serialized_type.nodes:
-                    print(f"[WARN] Skipping {asset_path} - No typetree found")
                     continue
 
                 typetree = data.object_reader.read_typetree()
@@ -147,7 +159,6 @@ for bundle_name in dialogue_bundles:
 
                 # build destination path
                 name = getattr(data, 'm_Name', 'MonoBehaviour')
-                print(f"Importing {name}")
                 asset_dir = os.path.join(bundle_dest, os.path.dirname(asset_path))
                 filename = os.path.basename(asset_path) + ".json"
                 typetree_path = os.path.join(asset_dir, filename)
@@ -158,6 +169,19 @@ for bundle_name in dialogue_bundles:
                 if typetree:
                     objd = obj.deref()
                     objd.save_typetree(typetree)
-                    os.makedirs(os.path.join(out_dir, streaming_assets_path, os.path.dirname(bundle_name)), exist_ok=True)
-                    with open(os.path.join(out_dir, streaming_assets_path, bundle_name), "wb") as f:
-                        f.write(env.file.save(packer="original"))
+                    needs_saving = True
+                    dialogues_num += 1
+
+    if needs_saving:
+        os.makedirs(os.path.join(out_dir, streaming_assets_path, os.path.dirname(bundle_name)), exist_ok=True)
+        with open(os.path.join(out_dir, streaming_assets_path, bundle_name), "wb") as f:
+            f.write(env.file.save(packer="original"))
+        bundles_num += 1
+
+print()
+print('[SUMMARY]')
+print('Imported I2Languages: 1')
+print('Imported strings:', strings_num)
+print('Imported textures:', textures_num)
+print('Imported dialogue databases:', dialogues_num)
+print('Bundles created:', bundles_num)

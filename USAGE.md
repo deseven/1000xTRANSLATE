@@ -10,7 +10,7 @@ You can run them individually if needed. Already translated strings won't be tou
 
 
 ## Translating
-You can translate everything manually or with the help of the included Translator (dialogues only). Note that having filled vocabularies (prefied with `VOCAB:`) is a must if you want to achieve a translation of a reasonable quality.
+You can translate everything manually or with the help of the included Translator (dialogues only). Note that having filled vocabularies (prefixed with `VOCAB:`) is a must if you want to achieve a translation of a reasonable quality.
 
 Run `npm run translate` and follow the prompts to translate all untranslated dialogues. You can cancel it and then run again at any moment. Alternatively you can use the Function directly by running `npm run function:translator key_wildcard [force]`, where `key_wildcard` is a dialogue key wildcard to translate and `force` is a flag to enforce the translation of already translated strings.
 
