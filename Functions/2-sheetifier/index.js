@@ -335,16 +335,18 @@ async function main() {
         await spreadsheet.replaceVocab('Chars', vocabStrings);
 
         // Load and process strings
-        console.log("Uploading strings...")
-        const stringsData = JSON.parse(fs.readFileSync(files.strings, 'utf8'));
-        const stringsStrings = {};
-        const systemValues = new Set(Object.values(systemStrings).map(obj => obj.original));
-        for (const [str, value] of Object.entries(stringsData)) {
-            if (!systemValues.has(str) && !/^[+-]?\d+$/.test(str)) {
-                stringsStrings[str] = null;
+            console.log("Uploading strings...")
+            const stringsData = JSON.parse(fs.readFileSync(files.strings, 'utf8'));
+            const stringsStrings = {};
+            const systemValues = new Set(Object.values(systemStrings).map(obj => obj.original));
+            for (const [str, value] of Object.entries(stringsData)) {
+                if (!systemValues.has(str) && !/^[+-]?\d+$/.test(str)) {
+                    stringsStrings[str] = null;
+                } else if (!str.includes(' ') && !/^[+-]?\d+$/.test(str)) {
+                    stringsStrings[str] = null; // if it's in system but only one word and not a number
+                }
             }
-        }
-        await spreadsheet.replaceStrings(stringsStrings);
+            await spreadsheet.replaceStrings(stringsStrings);
 
         console.log('All data processed and uploaded successfully.');
     } catch (error) {
