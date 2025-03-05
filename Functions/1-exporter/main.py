@@ -3,11 +3,27 @@ import json
 from dotenv import load_dotenv
 from tqdm import tqdm
 import UnityPy
+import traceback
+from datetime import datetime
+
+log_path = os.path.join(os.path.dirname(__file__), '../', '../', 'Logs', '1-exporter.log')
+os.makedirs(os.path.dirname(log_path), exist_ok=True)
+open(log_path, 'w').close()
+
+def log(message):
+    from datetime import datetime
+    with open(log_path, 'a', encoding='utf-8') as log_file:
+        timestamp = datetime.now().strftime('[%Y-%m-%d %H:%M:%S]')
+        log_file.write(f"{timestamp} {message}\n")
+
+log("==== FUNCTION STARTED ====")
 
 tqdm_format = "{desc:<21}{percentage:3.0f}%|{bar}{r_bar}"
 load_dotenv('../../.env')
 UnityPy.config.FALLBACK_UNITY_VERSION = os.getenv('GAME_UNITY_VERSION')
 UnityPy.config.FALLBACK_VERSION_WARNED = True
+
+log(f"Environment loaded - Unity Version: {os.getenv('GAME_UNITY_VERSION')}")
 
 # Handle both relative and absolute paths
 def get_path(env_var):
@@ -20,6 +36,8 @@ data_dir = get_path('GAME_DATA_DIR')
 res_dir = get_path('RES_DIR')
 textures_dir = get_path('TEXTURES_DIR')
 
+log(f"Paths configured - Data: {data_dir}, Resources: {res_dir}, Textures: {textures_dir}")
+
 strings_num = 0
 textures_num = 0
 dialogues_num = 0
@@ -27,9 +45,13 @@ dialogues_num = 0
 if os.getenv('UNITYPY_USE_PYTHON_PARSER') == 'true':
     from UnityPy.helpers import TypeTreeHelper
     TypeTreeHelper.read_typetree_boost = False
+    log("Using Python parser for TypeTree")
 
-with open(os.path.join(os.path.dirname(__file__), '../', '../', 'Data/textures.list'), 'r', encoding='utf-8') as f:
+textures_list_path = os.path.join(os.path.dirname(__file__), '../', '../', 'Data/textures.list')
+log(f"Reading textures list from: {textures_list_path}")
+with open(textures_list_path, 'r', encoding='utf-8') as f:
     textures = [line.strip() for line in f.readlines()]
+    log(f"Loaded {len(textures)} textures from list")
 
 streaming_assets_path = os.path.join('StreamingAssets', 'aa', 'StandaloneWindows64')
 bundle_dir = os.path.join(data_dir, streaming_assets_path)
@@ -37,114 +59,157 @@ dialogue_bundles = [f for f in os.listdir(bundle_dir) if f.endswith('.bundle') a
 texture_bundles = [f for f in os.listdir(bundle_dir) if f.endswith('.bundle') and '_texture_' in f]
 scene_bundles = [f for f in os.listdir(bundle_dir) if f.endswith('.bundle') and '_scenes_' in f]
 
-with open(os.path.join(os.path.dirname(__file__), os.path.join('../', '../', 'Data/I2.loc.typetree.json')), 'r', encoding='utf-8') as f:
+log(f"Found {len(dialogue_bundles)} dialogue bundles, {len(texture_bundles)} texture bundles, {len(scene_bundles)} scene bundles")
+
+typetree_path = os.path.join(os.path.dirname(__file__), os.path.join('../', '../', 'Data/I2.loc.typetree.json'))
+log(f"Reading typetree from: {typetree_path}")
+with open(typetree_path, 'r', encoding='utf-8') as f:
     I2LocTypetree = json.load(f)
+    log("Loaded I2.loc.typetree.json")
 
 print('Exporting I2Languages: ',end='')
 file_path = os.path.join(data_dir, 'resources.assets')
-env = UnityPy.load(file_path)
-found = False
-for obj in env.objects:
-    if obj.type.name == 'MonoBehaviour':
-        try:
-            data = obj.read(check_read=False)
-            if getattr(data, 'm_Name') == "I2Languages":
-                found = True
-        except:
-            continue
-        if found:
-            typetree = obj.read_typetree(I2LocTypetree['I2.Loc.LanguageSourceAsset'])
-            json_data = json.dumps(typetree, indent=4, ensure_ascii=False)
-            os.makedirs(res_dir, exist_ok=True)
-            with open(os.path.join(res_dir, "I2Languages.json"), 'w', encoding='utf-8') as f:
-                f.write(json_data)
-            print('1/1')
-            break
+log(f"Reading: {file_path}")
+try:
+    env = UnityPy.load(file_path)
+    found = False
+    for obj in env.objects:
+        if obj.type.name == 'MonoBehaviour':
+            try:
+                data = obj.read(check_read=False)
+                if getattr(data, 'm_Name') == "I2Languages":
+                    found = True
+            except:
+                continue
+            if found:
+                typetree = obj.read_typetree(I2LocTypetree['I2.Loc.LanguageSourceAsset'])
+                json_data = json.dumps(typetree, indent=2, ensure_ascii=False)
+                os.makedirs(res_dir, exist_ok=True)
+                i2_output_path = os.path.join(res_dir, "I2Languages.json")
+                log(f"Writing: {i2_output_path}")
+                with open(i2_output_path, 'w', encoding='utf-8') as f:
+                    f.write(json_data)
+                print('1/1')
+                log("Successfully exported I2Languages")
+                break
 
-if not found:
+    if not found:
+        print('failed')
+        log("ERROR: I2Languages not found in resources.assets")
+        exit(1)
+except Exception as e:
+    log(f"ERROR processing I2Languages: {str(e)}")
+    log(traceback.format_exc())
     print('failed')
     exit(1)
 
 strings = {}
 for bundle_name in tqdm(iterable=scene_bundles, desc='Exporting strings:', bar_format=tqdm_format):
     file_path = os.path.join(bundle_dir, bundle_name)
+    log(f"Reading: {file_path}")
     
-    env = UnityPy.load(file_path)
-    bundle_dest = os.path.join(res_dir, os.path.basename(bundle_name))
+    try:
+        env = UnityPy.load(file_path)
+        bundle_dest = os.path.join(res_dir, os.path.basename(bundle_name))
 
-    for obj in env.objects:
-        if obj.type.name == 'MonoBehaviour':
-            if obj.serialized_type.node:
-                data = obj.read()
-                tree = obj.read_typetree()
-                if 'm_Script' in tree:
+        for obj in env.objects:
+            if obj.type.name == 'MonoBehaviour':
+                if obj.serialized_type.node:
                     try:
-                        script = data.m_Script.read()
-                        if script.m_ClassName == 'TextMeshPro' and 'm_text' in tree:
-                            strings[tree['m_text'].replace('\t', '\\t').replace('\n', '\\n')] = ""
-                    except:
+                        data = obj.read()
+                        tree = obj.read_typetree()
+                        if 'm_Script' in tree:
+                            try:
+                                script = data.m_Script.read()
+                                if script.m_ClassName == 'TextMeshPro' and 'm_text' in tree:
+                                    strings[tree['m_text'].replace('\t', '\\t').replace('\n', '\\n')] = ""
+                            except:
+                                continue
+                    except Exception as inner_e:
+                        log(f"Error processing object in {bundle_name}: {str(inner_e)}")
                         continue
+    except Exception as e:
+        log(f"ERROR processing bundle {bundle_name}: {str(e)}")
+        log(traceback.format_exc())
 
 strings = dict(sorted(strings.items()))
 strings_num = len(strings)
-with open(os.path.join(res_dir, "strings.json"), 'w', encoding='utf-8') as f:
-    f.write(json.dumps(strings, indent=4, ensure_ascii=False))
+strings_output_path = os.path.join(res_dir, "strings.json")
+log(f"Writing {strings_num} strings to: {strings_output_path}")
+with open(strings_output_path, 'w', encoding='utf-8') as f:
+    f.write(json.dumps(strings, indent=2, ensure_ascii=False))
 
 for bundle_name in tqdm(iterable=texture_bundles, desc='Exporting textures:', bar_format=tqdm_format):
     file_path = os.path.join(bundle_dir, bundle_name)
-    env = UnityPy.load(file_path)
-    bundle_dest = os.path.join(res_dir, os.path.basename(bundle_name))
+    log(f"Reading: {file_path}")
+    try:
+        env = UnityPy.load(file_path)
+        bundle_dest = os.path.join(res_dir, os.path.basename(bundle_name))
 
-    for asset_path, obj in env.container.items():
-        if obj.type.name in ['Texture2D']:
-            if asset_path in textures:
-                os.makedirs(textures_dir, exist_ok=True)
-                data = obj.read()
-                if not asset_path.endswith('.png'):
-                    asset_path += '.png'
-                path = os.path.join(textures_dir, os.path.basename(asset_path))
-                data.image.save(path)
-                textures_num += 1
+        for asset_path, obj in env.container.items():
+            if obj.type.name in ['Texture2D']:
+                if asset_path in textures:
+                    os.makedirs(textures_dir, exist_ok=True)
+                    data = obj.read()
+                    if not asset_path.endswith('.png'):
+                        asset_path += '.png'
+                    path = os.path.join(textures_dir, os.path.basename(asset_path))
+                    log(f"Writing texture: {path}")
+                    data.image.save(path)
+                    textures_num += 1
+    except Exception as e:
+        log(f"ERROR processing texture bundle {bundle_name}: {str(e)}")
+        log(traceback.format_exc())
 
 for bundle_name in tqdm(iterable=dialogue_bundles, desc='Exporting dialogues:', bar_format=tqdm_format):
     file_path = os.path.join(bundle_dir, bundle_name)
-    env = UnityPy.load(file_path)
-    bundle_dest = os.path.join(res_dir, os.path.basename(bundle_name))
+    log(f"Reading: {file_path}")
+    try:
+        env = UnityPy.load(file_path)
+        bundle_dest = os.path.join(res_dir, os.path.basename(bundle_name))
 
-    for asset_path, obj in env.container.items():
-        if 'DialogueDatabaseArchive' in asset_path: # skip archived convos
-            continue
-        if obj.type.name == 'MonoBehaviour':
-            try:
-                data = obj.read()
-                script = data.m_Script.read()
-            except:
+        for asset_path, obj in env.container.items():
+            if 'DialogueDatabaseArchive' in asset_path: # skip archived convos
                 continue
-
-            if script.m_ClassName == 'DialogueDatabase':
-                # check for typetree availability
-                if not data.object_reader.serialized_type.nodes:
+            if obj.type.name == 'MonoBehaviour':
+                try:
+                    data = obj.read()
+                    script = data.m_Script.read()
+                except:
                     continue
 
-                typetree = data.object_reader.read_typetree()
-                json_data = json.dumps(typetree, indent=4, ensure_ascii=False)
+                if script.m_ClassName == 'DialogueDatabase':
+                    # check for typetree availability
+                    if not data.object_reader.serialized_type.nodes:
+                        continue
 
-                # build destination path
-                name = getattr(data, 'm_Name', 'MonoBehaviour')
-                asset_dir = os.path.join(bundle_dest, os.path.dirname(asset_path))
-                filename = os.path.basename(asset_path) + ".json"
+                    typetree = data.object_reader.read_typetree()
+                    json_data = json.dumps(typetree, indent=2, ensure_ascii=False)
 
-                os.makedirs(asset_dir, exist_ok=True)
-                output_path = os.path.join(asset_dir, filename)
+                    # build destination path
+                    name = getattr(data, 'm_Name', 'MonoBehaviour')
+                    asset_dir = os.path.join(bundle_dest, os.path.dirname(asset_path))
+                    filename = os.path.basename(asset_path) + ".json"
 
-                with open(output_path, 'w', encoding='utf-8') as f:
-                    f.write(json_data)
-                
-                dialogues_num += 1
+                    os.makedirs(asset_dir, exist_ok=True)
+                    output_path = os.path.join(asset_dir, filename)
+                    log(f"Writing dialogue: {output_path}")
 
+                    with open(output_path, 'w', encoding='utf-8') as f:
+                        f.write(json_data)
+                    
+                    dialogues_num += 1
+    except Exception as e:
+        log(f"ERROR processing dialogue bundle {bundle_name}: {str(e)}")
+        log(traceback.format_exc())
+
+summary = f"""
+[SUMMARY]
+Exported I2Languages: 1
+Exported strings: {strings_num}
+Exported textures: {textures_num}
+Exported dialogue databases: {dialogues_num}
+"""
 print()
-print('[SUMMARY]')
-print('Exported I2Languages: 1')
-print('Exported strings:', strings_num)
-print('Exported textures:', textures_num)
-print('Exported dialogue databases:', dialogues_num)
+print(summary.strip())
+log(summary)

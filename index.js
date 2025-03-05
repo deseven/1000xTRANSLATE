@@ -1,8 +1,13 @@
 import fs from 'fs';
 import path from 'path';
+import { fileURLToPath } from 'url';
+import { dirname } from 'path';
 import dotenv from 'dotenv';
 import chalk from 'chalk';
 import { execSync } from 'child_process';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
 // Load environment variables
 try {
@@ -212,8 +217,8 @@ async function checkEnvironment(requiredFor = null) {
 async function cleanup(all = false) {
     console.log(chalk.blue('Starting cleanup...'));
 
-    // Remove RES_DIR, TEXTURES_DIR and OUT_DIR
-    for (const dir of [process.env.RES_DIR, process.env.TEXTURES_DIR, process.env.OUT_DIR]) {
+    // Remove RES_DIR, TEXTURES_DIR, OUT_DIR and Logs
+    for (const dir of [process.env.RES_DIR, process.env.TEXTURES_DIR, process.env.OUT_DIR, path.join(__dirname, 'Logs')]) {
         if (dir && fs.existsSync(dir)) {
             console.log(`Removing directory: ${dir}`);
             fs.rmSync(dir, { recursive: true, force: true });

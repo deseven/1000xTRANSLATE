@@ -47,13 +47,29 @@ let unmatchedStrings = {
     strings: new Set()
 };
 
+const logPath = path.join(__dirname, '..', '..', 'Logs', '5-desheetifier.log');
+fs.mkdirSync(path.dirname(logPath), { recursive: true });
+fs.writeFileSync(logPath, '');
+
+function log(message) {
+    const timestamp = new Date().toISOString().replace('T', ' ').slice(0, 19);
+    const logMessage = `[${timestamp}] ${message}\n`;
+    fs.appendFileSync(logPath, logMessage);
+}
+
 function getAllJsonFiles(dir, files = []) {
     const items = fs.readdirSync(dir);
     items.forEach(item => {
         const fullPath = path.join(dir, item);
         if (fs.statSync(fullPath).isDirectory()) {
             getAllJsonFiles(fullPath, files);
-        } else if (path.extname(fullPath).toLowerCase() === '.json') {
+        } else if (
+            path.extname(fullPath).toLowerCase() === '.json' &&
+            path.basename(fullPath) !== 'I2Languages.json' &&
+            path.basename(fullPath) !== 'strings.json' &&
+            !path.basename(fullPath).startsWith('parsed_') &&
+            !fullPath.endsWith('-mod.json')
+        ) {
             files.push(fullPath);
         }
     });
@@ -98,7 +114,7 @@ async function main() {
         const jsonFiles = getAllJsonFiles(resDir);
 
         // Process I2Languages.json for system strings
-        const i2LanguagesFile = jsonFiles.find(file => path.basename(file) === 'I2Languages.json');
+        const i2LanguagesFile = path.join(resDir, 'I2Languages.json');
         if (i2LanguagesFile) {
             console.log(`Processing ${i2LanguagesFile}...`);
             const data = JSON.parse(fs.readFileSync(i2LanguagesFile, 'utf-8'));
@@ -124,13 +140,11 @@ async function main() {
                     }
                 });
             }
-            fs.writeFileSync(i2LanguagesFile, JSON.stringify(data, null, 2));
+            fs.writeFileSync(path.join(path.dirname(i2LanguagesFile), 'I2Languages-mod.json'), JSON.stringify(data, null, 2));
         }
 
         // Process other JSON files
         for (const file of jsonFiles) {
-            if (path.basename(file) === 'I2Languages.json') continue;
-            if (path.basename(file) === 'strings.json') continue;
 
             console.log(`Processing ${file}...`);
             const data = JSONbig.parse(fs.readFileSync(file, 'utf-8'));
@@ -258,11 +272,14 @@ async function main() {
                 });
             }
 
-            fs.writeFileSync(file, JSONbig.stringify(data, null, 2));
+            const baseDir = path.dirname(file);
+            const fileNameWithoutExt = path.basename(file, '.json');
+            const newFilePath = path.join(baseDir, `${fileNameWithoutExt}-mod.json`);
+            fs.writeFileSync(newFilePath, JSONbig.stringify(data, null, 2));
         }
 
         // Process strings.json
-        const stringsFile = jsonFiles.find(file => path.basename(file) === 'strings.json');
+        const stringsFile = path.join(resDir, 'strings.json');
         if (stringsFile) {
             console.log(`Processing ${stringsFile}...`);
             const data = JSON.parse(fs.readFileSync(stringsFile, 'utf-8'));
@@ -281,7 +298,7 @@ async function main() {
                 unmatchedStrings.strings.delete(key); // we don't need to track these
             });
 
-            fs.writeFileSync(stringsFile, JSON.stringify(data, null, 2));
+            fs.writeFileSync(path.join(path.dirname(stringsFile), 'strings-mod.json'), JSON.stringify(data, null, 2));
         }
 
         // Print statistics

@@ -21,13 +21,29 @@ const lang_bind = {
     ja: 2
 };
 
+const logPath = path.join(__dirname, '..', '..', 'Logs', '2-sheetifier.log');
+fs.mkdirSync(path.dirname(logPath), { recursive: true });
+fs.writeFileSync(logPath, '');
+
+function log(message) {
+    const timestamp = new Date().toISOString().replace('T', ' ').slice(0, 19);
+    const logMessage = `[${timestamp}] ${message}\n`;
+    fs.appendFileSync(logPath, logMessage);
+}
+
 function getAllJsonFiles(dir, files = []) {
     const items = fs.readdirSync(dir);
     items.forEach(item => {
         const fullPath = path.join(dir, item);
         if (fs.statSync(fullPath).isDirectory()) {
             getAllJsonFiles(fullPath, files);
-        } else if (path.extname(fullPath).toLowerCase() === '.json') {
+        } else if (
+            path.extname(fullPath).toLowerCase() === '.json' &&
+            path.basename(fullPath) !== 'I2Languages.json' &&
+            path.basename(fullPath) !== 'strings.json' &&
+            !path.basename(fullPath).startsWith('parsed_') &&
+            !fullPath.endsWith('-mod.json')
+        ) {
             files.push(fullPath);
         }
     });
@@ -37,7 +53,7 @@ function getAllJsonFiles(dir, files = []) {
 const jsonFiles = getAllJsonFiles(resDir);
 
 // Process I2Languages.json separately if it exists
-const i2LanguagesFile = jsonFiles.find(file => path.basename(file) === 'I2Languages.json');
+const i2LanguagesFile = path.join(resDir, 'I2Languages.json');
 if (i2LanguagesFile) {
     try {
         console.log(`Processing ${i2LanguagesFile}...`);
@@ -60,7 +76,6 @@ if (i2LanguagesFile) {
 }
 
 jsonFiles.forEach(file => {
-    if (path.basename(file) === 'I2Languages.json') return;
 
     try {
         console.log(`Processing ${file}...`);
@@ -238,10 +253,10 @@ allQuests = allQuests
 // Final output and file generation
 console.log(`Results:\nUnique Actors (${Object.keys(allActors).length})\nQuests (${Object.keys(allQuests).length})\nDialogues (${Object.keys(allDialogues).length})\nTerms (${Object.keys(allTerms).length})`);
 
-fs.writeFileSync(path.join(__dirname, '../../Data/parsed_actors.json'), JSON.stringify(allActors, null, 2));
-fs.writeFileSync(path.join(__dirname, '../../Data/parsed_quests.json'), JSON.stringify(allQuests, null, 2));
-fs.writeFileSync(path.join(__dirname, '../../Data/parsed_dialogues.json'), JSON.stringify(allDialogues, null, 2));
-fs.writeFileSync(path.join(__dirname, '../../Data/parsed_terms.json'), JSON.stringify(allTerms, null, 2));
+fs.writeFileSync(path.join(resDir, 'parsed_actors.json'), JSON.stringify(allActors, null, 2));
+fs.writeFileSync(path.join(resDir, 'parsed_quests.json'), JSON.stringify(allQuests, null, 2));
+fs.writeFileSync(path.join(resDir, 'parsed_dialogues.json'), JSON.stringify(allDialogues, null, 2));
+fs.writeFileSync(path.join(resDir, 'parsed_terms.json'), JSON.stringify(allTerms, null, 2));
 
 // this was originally 2 separate scripts,
 // that why we're reading the files we've just saved, but whatever
@@ -249,10 +264,10 @@ fs.writeFileSync(path.join(__dirname, '../../Data/parsed_terms.json'), JSON.stri
 console.log(`\nUploading data to the document...`);
 
 const files = {
-    actors: path.join(__dirname, '../../Data/parsed_actors.json'),
-    quests: path.join(__dirname, '../../Data/parsed_quests.json'),
-    dialogues: path.join(__dirname, '../../Data/parsed_dialogues.json'),
-    system: path.join(__dirname, '../../Data/parsed_terms.json'),
+    actors: path.join(resDir, 'parsed_actors.json'),
+    quests: path.join(resDir, 'parsed_quests.json'),
+    dialogues: path.join(resDir, 'parsed_dialogues.json'),
+    system: path.join(resDir, 'parsed_terms.json'),
     strings: path.join(resDir, 'strings.json')
 };
 
