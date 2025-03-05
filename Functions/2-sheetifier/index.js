@@ -2,6 +2,9 @@ const dotenv = require('dotenv');
 const fs = require('fs');
 const path = require('path');
 const ThousandXspreadsheeT = require('../../Misc/ThousandXspreadsheeT');
+const nanospinner = require('nanospinner');
+
+const initspinner = nanospinner.createSpinner('Initializing...').start();
 
 dotenv.config({ path: '.env' });
 const resDir = path.isAbsolute(process.env.RES_DIR)
@@ -52,11 +55,14 @@ function getAllJsonFiles(dir, files = []) {
 
 const jsonFiles = getAllJsonFiles(resDir);
 
+initspinner.success();
+
 // Process I2Languages.json separately if it exists
 const i2LanguagesFile = path.join(resDir, 'I2Languages.json');
-if (i2LanguagesFile) {
+const i2lspinner = nanospinner.createSpinner('Parsing I2Languages...').start();
+if (fs.existsSync(i2LanguagesFile)) {
     try {
-        console.log(`Processing ${i2LanguagesFile}...`);
+        log(`Processing ${i2LanguagesFile}...`);
         const data = JSON.parse(fs.readFileSync(i2LanguagesFile, 'utf-8'));
         const lang_numeric = lang_bind[process.env.BASE_LANG];
         let termText = '';
@@ -69,16 +75,24 @@ if (i2LanguagesFile) {
                 }
             });
         }
-        console.log(`Found ${Object.keys(allTerms).length} terms.\n`);
+        log(`Found ${Object.keys(allTerms).length} terms.\n`);
+        i2lspinner.success();
     } catch (err) {
+        i2lspinner.error();
         console.error(`Error processing ${i2LanguagesFile}:`, err);
+        process.exit(1);
     }
+} else {
+    i2lspinner.error();
+    console.error(`No ${i2LanguagesFile}, run Exporter first?`);
+    process.exit(1);
 }
 
+const dialoguespinner = nanospinner.createSpinner('Parsing dialogue databases...').start();
 jsonFiles.forEach(file => {
 
     try {
-        console.log(`Processing ${file}...`);
+        log(`Processing ${file}...`);
         const data = JSON.parse(fs.readFileSync(file, 'utf-8'));
         let fileQuests = [];
         let fileActors = [];
@@ -139,7 +153,7 @@ jsonFiles.forEach(file => {
                 );
                 if (keyField && !nameField) {
                     // special treatment for "Grace"
-                    console.warn('Actor with no localization field, switching to type 0.')
+                    log('Warning: Actor with no localization field, switching to type 0.')
                     nameField = actor.fields?.find(f =>
                         f.type === 0 &&
                         f.title === `Display Name ${process.env.BASE_LANG}`
@@ -210,21 +224,26 @@ jsonFiles.forEach(file => {
         }
 
         if (chapterNumber === null) {
-            console.warn(`Warning: Unable to determine chapter number for file ${file}`);
+            log(`Warning: Unable to determine chapter number for file ${file}`);
         }
 
         allQuests = [...allQuests, ...fileQuests];
         allActors = [...allActors, ...fileActors];
         allDialogues = [...allDialogues, ...fileDialogues];
 
-        console.log(`Found ${fileQuests.length} quests.\nFound ${fileActors.length} actors.\nFound ${fileDialoguesCount} dialogues.\n`);
+        log(`Found ${fileQuests.length} quests.\nFound ${fileActors.length} actors.\nFound ${fileDialoguesCount} dialogues.\n`);
     } catch (err) {
+        dialoguespinner.error();
         console.error(`Error processing ${file}:`, err);
+        process.exit(1);
     }
 });
+dialoguespinner.success();
+
+const savingspinner = nanospinner.createSpinner('Preparing parsed files...').start();
 
 // Sort dialogues by chapter number, preserving the internal order of dialogues within each file
-console.log("Sorting by chapter...\n");
+log("Sorting by chapter...\n");
 allDialogues = allDialogues
     .sort((a, b) => {
         if (a.value.chapter_number === undefined) return 1;
@@ -251,17 +270,19 @@ allQuests = allQuests
     }, {});
 
 // Final output and file generation
-console.log(`Results:\nUnique Actors (${Object.keys(allActors).length})\nQuests (${Object.keys(allQuests).length})\nDialogues (${Object.keys(allDialogues).length})\nTerms (${Object.keys(allTerms).length})`);
+const results = `[SUMMARY]\nUnique Actors (${Object.keys(allActors).length})\nQuests (${Object.keys(allQuests).length})\nDialogues (${Object.keys(allDialogues).length})\nTerms (${Object.keys(allTerms).length})`;
 
 fs.writeFileSync(path.join(resDir, 'parsed_actors.json'), JSON.stringify(allActors, null, 2));
 fs.writeFileSync(path.join(resDir, 'parsed_quests.json'), JSON.stringify(allQuests, null, 2));
 fs.writeFileSync(path.join(resDir, 'parsed_dialogues.json'), JSON.stringify(allDialogues, null, 2));
 fs.writeFileSync(path.join(resDir, 'parsed_terms.json'), JSON.stringify(allTerms, null, 2));
 
+savingspinner.success();
+
 // this was originally 2 separate scripts,
 // that why we're reading the files we've just saved, but whatever
 
-console.log(`\nUploading data to the document...`);
+log(`Uploading data to the document...`);
 
 const files = {
     actors: path.join(resDir, 'parsed_actors.json'),
@@ -284,34 +305,41 @@ async function main() {
         });
 
         // Load and process actors
-        console.log("Uploading actors...")
+        log("Uploading actors...");
+        spinner = nanospinner.createSpinner('Uploading actors...').start();
         const actorsData = JSON.parse(fs.readFileSync(files.actors, 'utf8'));
         const actorsStrings = {};
         for (const [key, value] of Object.entries(actorsData)) {
             actorsStrings[`Actor/${key}`] = { original: value };
         }
         await spreadsheet.replaceActors(actorsStrings);
+        spinner.success();
 
         // Load and process quests
-        console.log("Uploading quests...")
+        log("Uploading quests...");
+        spinner = nanospinner.createSpinner('Uploading quests...').start();
         const questsData = JSON.parse(fs.readFileSync(files.quests, 'utf8'));
         const questsStrings = {};
         for (const [key, value] of Object.entries(questsData)) {
             questsStrings[`Quest/${key}`] = { original: value };
         }
         await spreadsheet.replaceQuests(questsStrings);
+        spinner.success();
 
         // Load and process system terms
-        console.log("Uploading system...")
+        log("Uploading system...");
+        spinner = nanospinner.createSpinner('Uploading system...').start();
         const systemData = JSON.parse(fs.readFileSync(files.system, 'utf8'));
         const systemStrings = {};
         for (const [key, value] of Object.entries(systemData)) {
             systemStrings[`System/${key}`] = { original: value };
         }
         await spreadsheet.replaceSystem(systemStrings);
+        spinner.success();
 
         // Load and process dialogues
-        console.log("Uploading dialogues...")
+        log("Uploading dialogues...");
+        spinner = nanospinner.createSpinner('Uploading dialogues (could take a while)...').start();
         const dialoguesData = JSON.parse(fs.readFileSync(files.dialogues, 'utf8'));
         const dialoguesStrings = {};
         const actorTexts = new Set();
@@ -339,32 +367,45 @@ async function main() {
             }
         }
         await spreadsheet.replaceDialogues(dialoguesStrings);
+        spinner.success();
 
         // Process and replace Chars vocab
-        console.log("Uploading unique chars to vocabulary...")
+        log("Uploading unique chars to vocabulary...");
+        spinner = nanospinner.createSpinner('Uploading chars vocabulary...').start();
         const sortedActorTexts = Array.from(actorTexts).sort();
         const vocabStrings = {};
         sortedActorTexts.forEach(actor => {
             vocabStrings[actor] = null; // we only need keys
         });
         await spreadsheet.replaceVocab('Chars', vocabStrings);
+        spinner.success();
 
         // Load and process strings
-            console.log("Uploading strings...")
-            const stringsData = JSON.parse(fs.readFileSync(files.strings, 'utf8'));
-            const stringsStrings = {};
-            const systemValues = new Set(Object.values(systemStrings).map(obj => obj.original));
-            for (const [str, value] of Object.entries(stringsData)) {
-                if (!systemValues.has(str) && !/^[+-]?\d+$/.test(str)) {
-                    stringsStrings[str] = null;
-                } else if (!str.includes(' ') && !/^[+-]?\d+$/.test(str)) {
-                    stringsStrings[str] = null; // if it's in system but only one word and not a number
-                }
+        log("Uploading strings...");
+        spinner = nanospinner.createSpinner('Uploading strings...').start();
+        const stringsData = JSON.parse(fs.readFileSync(files.strings, 'utf8'));
+        const stringsStrings = {};
+        const systemValues = new Set(Object.values(systemStrings).map(obj => obj.original));
+        for (const [str, value] of Object.entries(stringsData)) {
+            if (!systemValues.has(str) && !/^[+-]?\d+$/.test(str)) {
+                stringsStrings[str] = null;
+            } else if (!str.includes(' ') && !/^[+-]?\d+$/.test(str)) {
+                stringsStrings[str] = null; // if it's in system but only one word and not a number
             }
-            await spreadsheet.replaceStrings(stringsStrings);
+        }
+        await spreadsheet.replaceStrings(stringsStrings);
+        spinner.success();
 
+        console.log();
+        console.log(results);
+        log(results);
+
+        console.log();
         console.log('All data processed and uploaded successfully.');
+        log('All data processed and uploaded successfully.');
     } catch (error) {
+        log(`Error: ${error}`);
+        spinner.error();
         console.error('Error:', error);
         process.exit(1);
     }

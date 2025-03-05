@@ -3,6 +3,9 @@ const fs = require('fs');
 const path = require('path');
 const ThousandXspreadsheeT = require('../../Misc/ThousandXspreadsheeT');
 const JSONbig = require('json-bigint');
+const nanospinner = require('nanospinner');
+
+const initspinner = nanospinner.createSpinner('Initializing...').start();
 
 dotenv.config({ path: '.env' });
 const resDir = path.isAbsolute(process.env.RES_DIR) ? process.env.RES_DIR : path.join(__dirname, '../../', process.env.RES_DIR);
@@ -78,6 +81,9 @@ function getAllJsonFiles(dir, files = []) {
 
 async function main() {
     try {
+        spinner = nanospinner.createSpinner('Loading translations from spreadsheet...').start();
+        log('Loading translations from spreadsheet...');
+
         const spreadsheet = new ThousandXspreadsheeT({
             GOOGLE_CREDENTIALS_FILE: path.join(__dirname, '../../', process.env.GOOGLE_CREDENTIALS_FILE),
             SPREADSHEET_ID: process.env.SPREADSHEET_ID,
@@ -89,7 +95,6 @@ async function main() {
         });
 
         // Get all translations from spreadsheet
-        console.log('Loading translations from spreadsheet...');
         const [actors, quests, system, dialogues, strings] = await Promise.all([
             spreadsheet.getActors(),
             spreadsheet.getQuests(),
@@ -112,11 +117,13 @@ async function main() {
         unmatchedStrings.strings = new Set(Object.keys(strings));
 
         const jsonFiles = getAllJsonFiles(resDir);
+        spinner.success();
 
         // Process I2Languages.json for system strings
+        spinner = nanospinner.createSpinner('Processing I2Languages...').start();
         const i2LanguagesFile = path.join(resDir, 'I2Languages.json');
-        if (i2LanguagesFile) {
-            console.log(`Processing ${i2LanguagesFile}...`);
+        log(`Processing ${i2LanguagesFile}...`);
+        if (fs.existsSync(i2LanguagesFile)) {
             const data = JSON.parse(fs.readFileSync(i2LanguagesFile, 'utf-8'));
             const targetLangIndex = lang_bind[process.env.TARGET_LANG];
 
@@ -134,19 +141,24 @@ async function main() {
                             unmatchedStrings.system.delete(systemKey);
                         } else {
                             stats.emptyFallbacks.system++;
-                            console.warn(`Warning: Empty translation for system string: ${systemKey}`);
+                            log(`Warning: Empty translation for system string: ${systemKey}`);
                             unmatchedStrings.system.delete(systemKey);
                         }
                     }
                 });
             }
             fs.writeFileSync(path.join(path.dirname(i2LanguagesFile), 'I2Languages-mod.json'), JSON.stringify(data, null, 2));
+        } else {
+            spinner.error();
+            console.error(`No ${i2LanguagesFile}, run Exporter first?`);
+            process.exit(1);
         }
+        spinner.success();
 
         // Process other JSON files
+        spinner = nanospinner.createSpinner('Processing dialogue databases...').start();
         for (const file of jsonFiles) {
-
-            console.log(`Processing ${file}...`);
+            log(`Processing ${file}...`);
             const data = JSONbig.parse(fs.readFileSync(file, 'utf-8'));
 
             // Process Actors
@@ -178,7 +190,7 @@ async function main() {
                                     unmatchedStrings.actors.delete(actorKey);
                                 } else {
                                     stats.emptyFallbacks.actors++;
-                                    console.warn(`Warning: Empty translation for actor: ${actorKey}`);
+                                    log(`Warning: Empty translation for actor: ${actorKey}`);
                                     unmatchedStrings.actors.delete(actorKey);
                                 }
                             }
@@ -209,7 +221,7 @@ async function main() {
                                     unmatchedStrings.quests.delete(questKey);
                                 } else {
                                     stats.emptyFallbacks.quests++;
-                                    console.warn(`Warning: Empty translation for quest: ${questKey}`);
+                                    log(`Warning: Empty translation for quest: ${questKey}`);
                                     unmatchedStrings.quests.delete(questKey);
                                 }
                             }
@@ -245,7 +257,7 @@ async function main() {
                                 unmatchedStrings.dialogues.delete(dialogueTextKey);
                             } else {
                                 stats.emptyFallbacks.dialogues++;
-                                console.warn(`Warning: Empty translation for dialogue: ${dialogueTextKey}`);
+                                log(`Warning: Empty translation for dialogue: ${dialogueTextKey}`);
                                 unmatchedStrings.dialogues.delete(dialogueTextKey);
                             }
                         }
@@ -264,7 +276,7 @@ async function main() {
                                 unmatchedStrings.dialogues.delete(menuTextKey);
                             } else {
                                 stats.emptyFallbacks.dialogues++;
-                                console.warn(`Warning: Empty translation for menu text: ${menuTextKey}`);
+                                log(`Warning: Empty translation for menu text: ${menuTextKey}`);
                                 unmatchedStrings.dialogues.delete(menuTextKey);
                             }
                         }
@@ -277,11 +289,13 @@ async function main() {
             const newFilePath = path.join(baseDir, `${fileNameWithoutExt}-mod.json`);
             fs.writeFileSync(newFilePath, JSONbig.stringify(data, null, 2));
         }
+        spinner.success();
 
         // Process strings.json
+        spinner = nanospinner.createSpinner('Processing strings...').start();
         const stringsFile = path.join(resDir, 'strings.json');
         if (stringsFile) {
-            console.log(`Processing ${stringsFile}...`);
+            log(`Processing ${stringsFile}...`);
             const data = JSON.parse(fs.readFileSync(stringsFile, 'utf-8'));
 
             Object.keys(data).forEach(key => {
@@ -300,58 +314,69 @@ async function main() {
 
             fs.writeFileSync(path.join(path.dirname(stringsFile), 'strings-mod.json'), JSON.stringify(data, null, 2));
         }
+        spinner.success();
 
-        // Print statistics
-        console.log('\nProcessing completed!\n');
-        console.log('Statistics:');
-        console.log('From spreadsheet:');
-        console.log(`- Actors: ${stats.spreadsheet.actors}`);
-        console.log(`- Quests: ${stats.spreadsheet.quests}`);
-        console.log(`- System: ${stats.spreadsheet.system}`);
-        console.log(`- Dialogues: ${stats.spreadsheet.dialogues}`);
-        console.log(`- Strings: ${stats.spreadsheet.strings}`);
+        // Create base statistics section
+        const baseStats = `\nProcessing completed!\n
+[SUMMARY]
+From spreadsheet:
+- Actors: ${stats.spreadsheet.actors}
+- Quests: ${stats.spreadsheet.quests}
+- System: ${stats.spreadsheet.system}
+- Dialogues: ${stats.spreadsheet.dialogues}
+- Strings: ${stats.spreadsheet.strings}
+
+Replaced in files:
+- Actors: ${stats.replaced.actors}
+- Quests: ${stats.replaced.quests}
+- System: ${stats.replaced.system}
+- Dialogues: ${stats.replaced.dialogues}
+- Strings: ${stats.replaced.strings}`;
+
+        // Create empty translations section (only showing non-zero values)
+        let emptySection = '';
+        const emptyStats = stats.emptyFallbacks;
+        if (Object.values(emptyStats).some(val => val > 0)) {
+            emptySection = `\n\nEmpty translations (skipped):`;
+            if (emptyStats.actors > 0) emptySection += `\n- Actors: ${emptyStats.actors}`;
+            if (emptyStats.quests > 0) emptySection += `\n- Quests: ${emptyStats.quests}`;
+            if (emptyStats.system > 0) emptySection += `\n- System: ${emptyStats.system}`;
+            if (emptyStats.dialogues > 0) emptySection += `\n- Dialogues: ${emptyStats.dialogues}`;
+            if (emptyStats.strings > 0) emptySection += `\n- Strings: ${emptyStats.strings}`;
+        }
         
-        console.log('\nReplaced in files:');
-        console.log(`- Actors: ${stats.replaced.actors}`);
-        console.log(`- Quests: ${stats.replaced.quests}`);
-        console.log(`- System: ${stats.replaced.system}`);
-        console.log(`- Dialogues: ${stats.replaced.dialogues}`);
-        console.log(`- Strings: ${stats.replaced.strings}`);
+        // Create not found section (only showing non-zero values)
+        let notFoundSection = '';
+        if (Object.values(unmatchedStrings).some(set => set.size > 0)) {
+            notFoundSection = `\n\nStrings not found in files:`;
+            if (unmatchedStrings.actors.size > 0) notFoundSection += `\n- Actors: ${unmatchedStrings.actors.size}`;
+            if (unmatchedStrings.quests.size > 0) notFoundSection += `\n- Quests: ${unmatchedStrings.quests.size}`;
+            if (unmatchedStrings.system.size > 0) notFoundSection += `\n- System: ${unmatchedStrings.system.size}`;
+            if (unmatchedStrings.dialogues.size > 0) notFoundSection += `\n- Dialogues: ${unmatchedStrings.dialogues.size}`;
+            if (unmatchedStrings.strings.size > 0) notFoundSection += `\n- Strings: ${unmatchedStrings.strings.size}`;
+        }
+        
+        // Create unmatched items lists (only for non-empty sets)
+        let unmatchedLists = '';
+        if (unmatchedStrings.actors.size > 0) unmatchedLists += `\n\nUnmatched actors: ${Array.from(unmatchedStrings.actors)}`;
+        if (unmatchedStrings.quests.size > 0) unmatchedLists += `\n\nUnmatched quests: ${Array.from(unmatchedStrings.quests)}`;
+        if (unmatchedStrings.system.size > 0) unmatchedLists += `\n\nUnmatched system strings: ${Array.from(unmatchedStrings.system)}`;
+        if (unmatchedStrings.dialogues.size > 0) unmatchedLists += `\n\nUnmatched dialogues: ${Array.from(unmatchedStrings.dialogues)}`;
+        if (unmatchedStrings.strings.size > 0) unmatchedLists += `\n\nUnmatched strings: ${Array.from(unmatchedStrings.strings)}`;
+        
+        // Combine all sections
+        const statsOutput = baseStats + emptySection + notFoundSection + unmatchedLists;
 
-        console.log('\nEmpty translations (skipped):');
-        console.log(`- Actors: ${stats.emptyFallbacks.actors}`);
-        console.log(`- Quests: ${stats.emptyFallbacks.quests}`);
-        console.log(`- System: ${stats.emptyFallbacks.system}`);
-        console.log(`- Dialogues: ${stats.emptyFallbacks.dialogues}`);
-        console.log(`- Strings: ${stats.emptyFallbacks.strings}`);
-
-        console.log('\nStrings not found in files:');
-        console.log(`- Actors: ${unmatchedStrings.actors.size}`);
-        console.log(`- Quests: ${unmatchedStrings.quests.size}`);
-        console.log(`- System: ${unmatchedStrings.system.size}`);
-        console.log(`- Dialogues: ${unmatchedStrings.dialogues.size}`);
-        console.log(`- Strings: ${unmatchedStrings.strings.size}`);
-
-        if (unmatchedStrings.actors.size > 0) {
-            console.log('\nUnmatched actors:', Array.from(unmatchedStrings.actors));
-        }
-        if (unmatchedStrings.quests.size > 0) {
-            console.log('\nUnmatched quests:', Array.from(unmatchedStrings.quests));
-        }
-        if (unmatchedStrings.system.size > 0) {
-            console.log('\nUnmatched system strings:', Array.from(unmatchedStrings.system));
-        }
-        if (unmatchedStrings.dialogues.size > 0) {
-            console.log('\nUnmatched dialogues:', Array.from(unmatchedStrings.dialogues));
-        }
-        if (unmatchedStrings.strings.size > 0) {
-            console.log('\nUnmatched strings:', Array.from(unmatchedStrings.strings));
-        }
+        console.log(statsOutput);
+        log(statsOutput);
 
     } catch (error) {
+        log(`Error: ${error}`);
+        spinner.error();
         console.error('Error:', error);
         process.exit(1);
     }
 }
 
+initspinner.success();
 main();
