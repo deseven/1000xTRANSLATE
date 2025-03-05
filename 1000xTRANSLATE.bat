@@ -1,3 +1,4 @@
+@echo off
 :menu
 cls
 echo Please select an option:
