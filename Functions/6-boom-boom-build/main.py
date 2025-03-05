@@ -16,9 +16,15 @@ def log(message):
         timestamp = datetime.now().strftime('[%Y-%m-%d %H:%M:%S]')
         log_file.write(f"{timestamp} {message}\n")
 
+def tqdm_wrap(iterable, desc):
+    bar_format = "{desc:<21}{percentage:3.0f}%|{bar}{r_bar}"
+    if os.name == 'nt':  # Windows
+        return tqdm(iterable=iterable, desc=desc, bar_format=bar_format, ascii=True)
+    else:
+        return tqdm(iterable=iterable, desc=desc, bar_format=bar_format)
+
 log("==== FUNCTION STARTED ====")
 
-tqdm_format = "{desc:<21}{percentage:3.0f}%|{bar}{r_bar}"
 load_dotenv('../../.env')
 UnityPy.config.FALLBACK_UNITY_VERSION = os.getenv('GAME_UNITY_VERSION')
 UnityPy.config.FALLBACK_VERSION_WARNED = True
@@ -133,7 +139,7 @@ except Exception as e:
     print('failed')
     exit(1)
 
-for bundle_name in tqdm(iterable=scene_bundles, desc='Importing strings:', bar_format=tqdm_format):
+for bundle_name in tqdm_wrap(iterable=scene_bundles, desc='Importing strings:'):
     needs_saving = False
     file_path = os.path.join(bundle_dir, bundle_name)
     log(f"Reading file: {file_path}")
@@ -172,7 +178,7 @@ for bundle_name in tqdm(iterable=scene_bundles, desc='Importing strings:', bar_f
         log(traceback.format_exc())
 
 if overrides_dir:
-    for bundle_name in tqdm(iterable=texture_bundles, desc='Importing textures:', bar_format=tqdm_format):
+    for bundle_name in tqdm_wrap(iterable=texture_bundles, desc='Importing textures:'):
         needs_saving = False
         file_path = os.path.join(bundle_dir, bundle_name)
         log(f"Reading file: {file_path}")
@@ -207,7 +213,7 @@ if overrides_dir:
             log(f"Error processing texture bundle {bundle_name}: {str(e)}")
             log(traceback.format_exc())
 
-for bundle_name in tqdm(iterable=dialogue_bundles, desc='Importing dialogues:', bar_format=tqdm_format):
+for bundle_name in tqdm_wrap(iterable=dialogue_bundles, desc='Importing dialogues:'):
     needs_saving = False
     file_path = os.path.join(bundle_dir, bundle_name)
     log(f"Reading file: {file_path}")

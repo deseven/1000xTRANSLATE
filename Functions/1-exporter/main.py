@@ -16,9 +16,15 @@ def log(message):
         timestamp = datetime.now().strftime('[%Y-%m-%d %H:%M:%S]')
         log_file.write(f"{timestamp} {message}\n")
 
+def tqdm_wrap(iterable, desc):
+    bar_format = "{desc:<21}{percentage:3.0f}%|{bar}{r_bar}"
+    if os.name == 'nt':  # Windows
+        return tqdm(iterable=iterable, desc=desc, bar_format=bar_format, ascii=True)
+    else:
+        return tqdm(iterable=iterable, desc=desc, bar_format=bar_format)
+
 log("==== FUNCTION STARTED ====")
 
-tqdm_format = "{desc:<21}{percentage:3.0f}%|{bar}{r_bar}"
 load_dotenv('../../.env')
 UnityPy.config.FALLBACK_UNITY_VERSION = os.getenv('GAME_UNITY_VERSION')
 UnityPy.config.FALLBACK_VERSION_WARNED = True
@@ -104,7 +110,7 @@ except Exception as e:
     exit(1)
 
 strings = {}
-for bundle_name in tqdm(iterable=scene_bundles, desc='Exporting strings:', bar_format=tqdm_format):
+for bundle_name in tqdm_wrap(iterable=scene_bundles, desc='Exporting strings:'):
     file_path = os.path.join(bundle_dir, bundle_name)
     log(f"Reading: {file_path}")
     
@@ -139,7 +145,7 @@ log(f"Writing {strings_num} strings to: {strings_output_path}")
 with open(strings_output_path, 'w', encoding='utf-8') as f:
     f.write(json.dumps(strings, indent=2, ensure_ascii=False))
 
-for bundle_name in tqdm(iterable=texture_bundles, desc='Exporting textures:', bar_format=tqdm_format):
+for bundle_name in tqdm_wrap(iterable=texture_bundles, desc='Exporting textures:'):
     file_path = os.path.join(bundle_dir, bundle_name)
     log(f"Reading: {file_path}")
     try:
@@ -161,7 +167,7 @@ for bundle_name in tqdm(iterable=texture_bundles, desc='Exporting textures:', ba
         log(f"ERROR processing texture bundle {bundle_name}: {str(e)}")
         log(traceback.format_exc())
 
-for bundle_name in tqdm(iterable=dialogue_bundles, desc='Exporting dialogues:', bar_format=tqdm_format):
+for bundle_name in tqdm_wrap(iterable=dialogue_bundles, desc='Exporting dialogues:'):
     file_path = os.path.join(bundle_dir, bundle_name)
     log(f"Reading: {file_path}")
     try:
