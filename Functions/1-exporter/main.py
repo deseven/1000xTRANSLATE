@@ -197,6 +197,7 @@ if EXPORT_DIALOGUES:
             log(traceback.format_exc())
 
 if EXPORT_TEXTURES:
+    exported_textures = set()
     for bundle_name in tqdm_wrap(iterable=texture_bundles, desc='Exporting textures:'):
         file_path = os.path.join(bundle_dir, bundle_name)
         log(f"Reading: {file_path}")
@@ -212,21 +213,25 @@ if EXPORT_TEXTURES:
                             # Get the original texture associated with this Sprite
                             data = data.m_RD.texture.read()
                         os.makedirs(textures_dir, exist_ok=True)
-                        if not asset_path.endswith('.png'):
-                            asset_path += '.png'
-                        path = os.path.join(textures_dir, os.path.basename(asset_path))
+                        texture_save_name = asset_path if asset_path.endswith('.png') else asset_path + '.png'
+                        path = os.path.join(textures_dir, os.path.basename(texture_save_name))
                         log(f"Writing texture: {path}")
                         data.image.save(path)
                         textures_num += 1
+                        exported_textures.add(asset_path)
         except Exception as e:
             log(f"ERROR processing texture bundle {bundle_name}: {str(e)}")
             log(traceback.format_exc())
+    missing_textures = sorted(list(set(textures) - exported_textures))
+    log(f"Textures not exported: {', '.join(missing_textures)}")
+else:
+    missing_textures = []
 
 summary = f"""
 [SUMMARY]
-Exported I2Languages: 1
+Exported I2Languages: 1/1
 Exported strings: {strings_num}
-Exported textures: {textures_num}
+Exported textures: {textures_num}/{len(textures)}
 Exported dialogue databases: {dialogues_num}
 """
 print()
