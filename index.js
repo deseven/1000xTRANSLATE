@@ -370,6 +370,14 @@ function run(dir, extraArgs = []) {
 
     checkEnvironment(requiredFor);
 
+    // Check that either .venv or node_modules directory exists
+    const venvExists = fs.existsSync(path.join(dir, '.venv'));
+    const nodeModulesExists = fs.existsSync(path.join(dir, 'node_modules'));
+    if (!venvExists && !nodeModulesExists) {
+        console.log(chalk.red(`Dependencies not installed in ${dir}.`), '\nPlease run', chalk.blue('npm run init'), 'first.');
+        process.exit(1);
+    }
+
     const hasPackageJson = fs.existsSync(path.join(dir, 'package.json'));
     const hasRequirements = fs.existsSync(path.join(dir, 'requirements.txt'));
 

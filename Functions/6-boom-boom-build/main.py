@@ -7,6 +7,12 @@ from tqdm import tqdm
 import traceback
 from datetime import datetime
 
+# For debugging/development purposes
+IMPORT_MAIN = True
+IMPORT_STRINGS = True
+IMPORT_DIALOGUES = True
+IMPORT_TEXTURES = True
+
 log_path = os.path.join(os.path.dirname(__file__), '../', '../', 'Logs', '6-boom-boom-build.log')
 os.makedirs(os.path.dirname(log_path), exist_ok=True)
 open(log_path, 'w').close()
@@ -102,172 +108,179 @@ log(f"Reading file: {textures_list_path}")
 with open(textures_list_path, 'r', encoding='utf-8') as f:
     textures = [line.strip() for line in f.readlines()]
 
-print('Importing I2Languages: ',end='')
-file_path = os.path.join(data_dir, 'resources.assets')
-log(f"Reading file: {file_path}")
-try:
-    env = UnityPy.load(file_path)
-    found = False
-    for obj in env.objects:
-        if obj.type.name == 'MonoBehaviour':
-            try:
-                data = obj.read(check_read=False)
-                if getattr(data, 'm_Name') == "I2Languages":
-                    found = True
-            except:
-                continue
-            if found:
-                obj.save_typetree(I2Languages, I2LocTypetree['I2.Loc.LanguageSourceAsset'])
-                os.makedirs(out_dir, exist_ok=True)
-                out_path = os.path.join(out_dir, 'resources.assets')
-                log(f"Writing file: {out_path}")
-                with open(out_path, "wb") as f:
-                    f.write(env.file.save(packer="original"))
-                print('1/1')
-                log("I2Languages successfully imported")
-                break
-
-    if not found:
-        error_msg = "Failed to import I2Languages: I2Languages not found in resources.assets"
-        print('failed')
-        log(error_msg)
-        exit(1)
-except Exception as e:
-    error_msg = f"Error importing I2Languages: {str(e)}"
-    log(error_msg)
-    log(traceback.format_exc())
-    print('failed')
-    exit(1)
-
-for bundle_name in tqdm_wrap(iterable=scene_bundles, desc='Importing strings:'):
-    needs_saving = False
-    file_path = os.path.join(bundle_dir, bundle_name)
+if IMPORT_MAIN:
+    print('Importing I2Languages: ',end='')
+    file_path = os.path.join(data_dir, 'resources.assets')
     log(f"Reading file: {file_path}")
     try:
         env = UnityPy.load(file_path)
-        bundle_strings_count = 0
-        
+        found = False
         for obj in env.objects:
             if obj.type.name == 'MonoBehaviour':
-                if obj.serialized_type.node:
-                    data = obj.read()
-                    tree = obj.read_typetree()
-                    if 'm_Script' in tree:
-                        try:
-                            script = data.m_Script.read()
-                        except:
-                            continue
-                        if script.m_ClassName == 'TextMeshPro' and 'm_text' in tree:
-                            strings_key = tree['m_text'].replace('\t', '\\t').replace('\n', '\\n')
-                            if strings_key in strings and strings[strings_key] != "":
-                                tree['m_text'] = strings[strings_key].replace('\\t', '\t').replace('\\n', '\n')
-                                obj.save_typetree(tree)
-                                needs_saving = True
-                                strings_num += 1
-                                bundle_strings_count += 1
-        
-        if needs_saving:
-            out_bundle_path = os.path.join(out_dir, streaming_assets_path, bundle_name)
-            os.makedirs(os.path.dirname(out_bundle_path), exist_ok=True)
-            log(f"Writing file: {out_bundle_path} (imported {bundle_strings_count} strings)")
-            with open(out_bundle_path, "wb") as f:
-                f.write(env.file.save(packer="original"))
-            bundles_num += 1
-    except Exception as e:
-        log(f"Error processing bundle {bundle_name}: {str(e)}")
-        log(traceback.format_exc())
+                try:
+                    data = obj.read(check_read=False)
+                    if getattr(data, 'm_Name') == "I2Languages":
+                        found = True
+                except:
+                    continue
+                if found:
+                    obj.save_typetree(I2Languages, I2LocTypetree['I2.Loc.LanguageSourceAsset'])
+                    os.makedirs(out_dir, exist_ok=True)
+                    out_path = os.path.join(out_dir, 'resources.assets')
+                    log(f"Writing file: {out_path}")
+                    with open(out_path, "wb") as f:
+                        f.write(env.file.save(packer="original"))
+                    print('1/1')
+                    log("I2Languages successfully imported")
+                    break
 
-if overrides_dir:
-    for bundle_name in tqdm_wrap(iterable=texture_bundles, desc='Importing textures:'):
+        if not found:
+            error_msg = "Failed to import I2Languages: I2Languages not found in resources.assets"
+            print('failed')
+            log(error_msg)
+            exit(1)
+    except Exception as e:
+        error_msg = f"Error importing I2Languages: {str(e)}"
+        log(error_msg)
+        log(traceback.format_exc())
+        print('failed')
+        exit(1)
+
+if IMPORT_STRINGS:
+    for bundle_name in tqdm_wrap(iterable=scene_bundles, desc='Importing strings:'):
         needs_saving = False
         file_path = os.path.join(bundle_dir, bundle_name)
         log(f"Reading file: {file_path}")
         try:
             env = UnityPy.load(file_path)
-            bundle_textures_count = 0
+            bundle_strings_count = 0
             
-            for asset_path, obj in env.container.items():
-                if obj.type.name in ['Texture2D','Sprite']:
-                    if asset_path in textures:
+            for obj in env.objects:
+                if obj.type.name == 'MonoBehaviour':
+                    if obj.serialized_type.node:
                         data = obj.read()
-                        if not asset_path.endswith('.png'):
-                            asset_path += '.png'
-                        override = os.path.join(overrides_dir, os.path.basename(asset_path))
-                        if os.path.exists(override) and obj.type.name == 'Texture2D': # sprite importing is not available rn
-                            log(f"Found texture override: {override} for {asset_path}")
-                            img = Image.open(override)
-                            data.image = img
-                            data.save()
-                            needs_saving = True
-                            textures_num += 1
-                            bundle_textures_count += 1
-
+                        tree = obj.read_typetree()
+                        if 'm_Script' in tree:
+                            try:
+                                script = data.m_Script.read()
+                            except:
+                                continue
+                            if script.m_ClassName == 'TextMeshPro' and 'm_text' in tree:
+                                strings_key = tree['m_text'].replace('\t', '\\t').replace('\n', '\\n')
+                                if strings_key in strings and strings[strings_key] != "":
+                                    tree['m_text'] = strings[strings_key].replace('\\t', '\t').replace('\\n', '\n')
+                                    obj.save_typetree(tree)
+                                    needs_saving = True
+                                    strings_num += 1
+                                    bundle_strings_count += 1
+            
             if needs_saving:
                 out_bundle_path = os.path.join(out_dir, streaming_assets_path, bundle_name)
                 os.makedirs(os.path.dirname(out_bundle_path), exist_ok=True)
-                log(f"Writing file: {out_bundle_path} (imported {bundle_textures_count} textures)")
+                log(f"Writing file: {out_bundle_path} (imported {bundle_strings_count} strings)")
                 with open(out_bundle_path, "wb") as f:
                     f.write(env.file.save(packer="original"))
                 bundles_num += 1
         except Exception as e:
-            log(f"Error processing texture bundle {bundle_name}: {str(e)}")
+            log(f"Error processing bundle {bundle_name}: {str(e)}")
             log(traceback.format_exc())
 
-for bundle_name in tqdm_wrap(iterable=dialogue_bundles, desc='Importing dialogues:'):
-    needs_saving = False
-    file_path = os.path.join(bundle_dir, bundle_name)
-    log(f"Reading file: {file_path}")
-    try:
-        env = UnityPy.load(file_path)
-        bundle_dialogues_count = 0
-        
-        for asset_path, obj in env.container.items():
-            if 'DialogueDatabaseArchive' in asset_path: # skip archived convos
-                continue
-            if obj.type.name == 'MonoBehaviour':
-                try:
-                    data = obj.read()
-                    script = data.m_Script.read()
-                except:
+if IMPORT_DIALOGUES:
+    for bundle_name in tqdm_wrap(iterable=dialogue_bundles, desc='Importing dialogues:'):
+        needs_saving = False
+        file_path = os.path.join(bundle_dir, bundle_name)
+        log(f"Reading file: {file_path}")
+        try:
+            env = UnityPy.load(file_path)
+            bundle_dialogues_count = 0
+            
+            for asset_path, obj in env.container.items():
+                if 'DialogueDatabaseArchive' in asset_path: # skip archived convos
                     continue
-
-                if script.m_ClassName == 'DialogueDatabase':
-                    # check for typetree availability
-                    if not data.object_reader.serialized_type.nodes:
+                if obj.type.name == 'MonoBehaviour':
+                    try:
+                        data = obj.read()
+                        script = data.m_Script.read()
+                    except:
                         continue
 
-                    typetree = data.object_reader.read_typetree()
-                    json_data = json.dumps(typetree, indent=4, ensure_ascii=False)
+                    if script.m_ClassName == 'DialogueDatabase':
+                        # check for typetree availability
+                        if not data.object_reader.serialized_type.nodes:
+                            continue
 
-                    # build destination path
-                    name = getattr(data, 'm_Name', 'MonoBehaviour')
-                    bundle_dest = os.path.join(res_dir, os.path.basename(bundle_name))
-                    asset_dir = os.path.join(bundle_dest, os.path.dirname(asset_path))
-                    filename = os.path.basename(asset_path) + "-mod.json"
-                    typetree_path = os.path.join(asset_dir, filename)
+                        typetree = data.object_reader.read_typetree()
+                        json_data = json.dumps(typetree, indent=4, ensure_ascii=False)
 
-                    if os.path.exists(typetree_path) and os.path.getsize(typetree_path) > 0:
-                        log(f"Found modified dialogue: {typetree_path} for {asset_path}")
-                        with open(typetree_path, 'r', encoding='utf-8') as f:
-                            typetree = json.load(f)
-                        
-                        if typetree:
-                            objd = obj.deref()
-                            objd.save_typetree(typetree)
-                            needs_saving = True
-                            dialogues_num += 1
-                            bundle_dialogues_count += 1
+                        # build destination path
+                        name = getattr(data, 'm_Name', 'MonoBehaviour')
+                        bundle_dest = os.path.join(res_dir, os.path.basename(bundle_name))
+                        asset_dir = os.path.join(bundle_dest, os.path.dirname(asset_path))
+                        filename = os.path.basename(asset_path) + "-mod.json"
+                        typetree_path = os.path.join(asset_dir, filename)
 
-        if needs_saving:
-            out_bundle_path = os.path.join(out_dir, streaming_assets_path, bundle_name)
-            os.makedirs(os.path.dirname(out_bundle_path), exist_ok=True)
-            log(f"Writing file: {out_bundle_path} (imported {bundle_dialogues_count} dialogue databases)")
-            with open(out_bundle_path, "wb") as f:
-                f.write(env.file.save(packer="original"))
-            bundles_num += 1
-    except Exception as e:
-        log(f"Error processing dialogue bundle {bundle_name}: {str(e)}")
-        log(traceback.format_exc())
+                        if os.path.exists(typetree_path) and os.path.getsize(typetree_path) > 0:
+                            log(f"Found modified dialogue: {typetree_path} for {asset_path}")
+                            with open(typetree_path, 'r', encoding='utf-8') as f:
+                                typetree = json.load(f)
+                            
+                            if typetree:
+                                objd = obj.deref()
+                                objd.save_typetree(typetree)
+                                needs_saving = True
+                                dialogues_num += 1
+                                bundle_dialogues_count += 1
+
+            if needs_saving:
+                out_bundle_path = os.path.join(out_dir, streaming_assets_path, bundle_name)
+                os.makedirs(os.path.dirname(out_bundle_path), exist_ok=True)
+                log(f"Writing file: {out_bundle_path} (imported {bundle_dialogues_count} dialogue databases)")
+                with open(out_bundle_path, "wb") as f:
+                    f.write(env.file.save(packer="original"))
+                bundles_num += 1
+        except Exception as e:
+            log(f"Error processing dialogue bundle {bundle_name}: {str(e)}")
+            log(traceback.format_exc())
+
+if IMPORT_TEXTURES:
+    if overrides_dir:
+        for bundle_name in tqdm_wrap(iterable=texture_bundles, desc='Importing textures:'):
+            needs_saving = False
+            file_path = os.path.join(bundle_dir, bundle_name)
+            log(f"Reading file: {file_path}")
+            try:
+                env = UnityPy.load(file_path)
+                bundle_textures_count = 0
+                
+                for asset_path, obj in env.container.items():
+                    if obj.type.name in ['Texture2D','Sprite']:
+                        if asset_path in textures:
+                            data = obj.read()
+                            if not asset_path.endswith('.png'):
+                                asset_path += '.png'
+                            override = os.path.join(overrides_dir, os.path.basename(asset_path))
+                            if os.path.exists(override):
+                                log(f"Found texture override: {override} for {asset_path}")
+                                img = Image.open(override)
+                                if obj.type.name == 'Sprite':
+                                    # Get the original texture associated with this Sprite
+                                    data = data.m_RD.texture.read()
+                                data.image = img
+                                data.save()
+                                needs_saving = True
+                                textures_num += 1
+                                bundle_textures_count += 1
+
+                if needs_saving:
+                    out_bundle_path = os.path.join(out_dir, streaming_assets_path, bundle_name)
+                    os.makedirs(os.path.dirname(out_bundle_path), exist_ok=True)
+                    log(f"Writing file: {out_bundle_path} (imported {bundle_textures_count} textures)")
+                    with open(out_bundle_path, "wb") as f:
+                        f.write(env.file.save(packer="original"))
+                    bundles_num += 1
+            except Exception as e:
+                log(f"Error processing texture bundle {bundle_name}: {str(e)}")
+                log(traceback.format_exc())
 
 summary = f"""
 [SUMMARY]

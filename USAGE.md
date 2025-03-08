@@ -41,10 +41,18 @@ Again, you can run them individually if needed. The result would be the changed 
 ## Maintenance
 Use `npm run clean` to clean exported and parsed resources.
 Use `npm run clean:all` to also remove all installed dependencies in Functions and Misc.
-None of the above would affect anything in your `DATA_DIR`, `OVERRIDES_DIR` and spreadsheet.
+None of the above would affect anything in your `DATA_DIR`, `OVERRIDES_DIR` or spreadsheet with translation.
 
 Use `npm run init` to install required dependencies.
 Use `npm run validate` to check the env file validity and all dependencies.
+
+
+## Troubleshooting
+In most common cases you will get a clear error stating what might be the issue, however bugs and incorrect configuration are obviously a thing too, so as a start try at least running `npm run clean:all` and `npm run init`. Double-checking your `.env` file could help as well.
+
+Many Functions write detailed logs in the `Logs` directory, check them for more information.
+
+If nothing helps, feel free to [create a new issue](https://github.com/deseven/1000xTRANSLATE/issues/new?body=Describe+the+problem+and+attach+anything+that+could+be+relevant+-+logs,+screenshots,+etc.&labels=question).
 
 
 ## LLM usage notes

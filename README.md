@@ -14,7 +14,7 @@ The toolset is intended to be used in the following way:
  - ~~be able to export, parse, translate and import all visible text data~~
  - ~~translator/checker~~
  - fonts patching
- - general polishing & documentation
+ - ~~general polishing & documentation~~
  - ~~texture~~ and other resources overrides (?)
 
 

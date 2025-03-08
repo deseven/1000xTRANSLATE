@@ -8,6 +8,9 @@ node_modules/
 *.zip
 *.log
 *.htm
+*.afphoto
+*.psd
+*.*lock*
 .env
 .venv
 !package.json
