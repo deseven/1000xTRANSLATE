@@ -175,15 +175,16 @@ async function checkEnvironment(requiredFor = null) {
     // Function to check a single variable
     const checkVariable = (varName, config) => {
         const value = process.env[varName];
+        const requiredInfo = (config.required_by && config.required_by.length > 0) ? ` [Required by: ${config.required_by.join(', ')}]` : '';
         const errorMessage = config.message || (config.check ? 'failed validation check.' : 'is not set or is empty.');
 
         if (!value) {
-            console.log(chalk.yellow('[WARNING]'), `${varName} ${errorMessage}`);
+            console.log(chalk.yellow('[WARNING]'), `${varName} ${errorMessage}${requiredInfo}`);
             return false;
         }
 
         if (config.check && !checks[config.check](value)) {
-            console.log(chalk.yellow('[WARNING]'), `${varName} ${errorMessage}`);
+            console.log(chalk.yellow('[WARNING]'), `${varName} ${errorMessage}${requiredInfo}`);
             return false;
         }
 
