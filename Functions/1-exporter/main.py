@@ -25,7 +25,7 @@ def log(message):
 def tqdm_wrap(iterable, desc):
     bar_format = "{desc:<21}{percentage:3.0f}%|{bar}{r_bar}"
     if os.name == 'nt':  # Windows
-        return tqdm(iterable=iterable, desc=desc, bar_format=bar_format, ascii=True)
+        return tqdm(iterable=iterable, desc=desc, bar_format=bar_format, ascii=False)
     else:
         return tqdm(iterable=iterable, desc=desc, bar_format=bar_format)
 

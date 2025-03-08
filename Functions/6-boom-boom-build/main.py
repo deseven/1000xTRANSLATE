@@ -25,7 +25,7 @@ def log(message):
 def tqdm_wrap(iterable, desc):
     bar_format = "{desc:<21}{percentage:3.0f}%|{bar}{r_bar}"
     if os.name == 'nt':  # Windows
-        return tqdm(iterable=iterable, desc=desc, bar_format=bar_format, ascii=True)
+        return tqdm(iterable=iterable, desc=desc, bar_format=bar_format, ascii=False)
     else:
         return tqdm(iterable=iterable, desc=desc, bar_format=bar_format)
 
@@ -281,6 +281,20 @@ if IMPORT_TEXTURES:
             except Exception as e:
                 log(f"Error processing texture bundle {bundle_name}: {str(e)}")
                 log(traceback.format_exc())
+
+post_cmd = os.getenv('POST_CMD')
+if post_cmd:
+    # Set working directory to two directories up from this script's directory just in case
+    work_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
+    os.chdir(work_dir)
+    print('Running post-processing...')
+    import subprocess
+    if os.name == 'nt':
+        result = subprocess.run(post_cmd, shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.PIPE, text=True)
+    else:
+        result = subprocess.run(post_cmd, shell=True, executable='/bin/sh', stdout=subprocess.DEVNULL, stderr=subprocess.PIPE, text=True)
+    if result.stderr:
+        log(result.stderr)
 
 summary = f"""
 [SUMMARY]

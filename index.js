@@ -81,6 +81,9 @@ const variables = {
         check: 'validDirOrCreatable',
         message: 'is not a valid directory or cannot be created'
     },
+    POST_CMD: {
+        required_by: []
+    },
     BASE_LANG: {
         required_by: ['function:2-sheetifier'],
         check: 'checkLangCode',
