@@ -84,6 +84,7 @@ async function main() {
             return key === dialogueKeyFilter;
         })
         .filter(([_, value]) => forceTranslation || !value.translated)
+        .filter(([_, value]) => value.original && value.original.trim() !== '')
         .reduce((acc, [key, value]) => ({ ...acc, [key]: value }), {});
 
     // Group dialogues into blocks
