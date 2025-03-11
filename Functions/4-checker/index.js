@@ -4,19 +4,18 @@ const fs = require('fs/promises');
 const readline = require('readline');
 const OpenAI = require('openai');
 const ThousandXspreadsheeT = require('../../Misc/ThousandXspreadsheeT');
+const fsSync = require('fs');
+const logPath = path.join(__dirname, '..', '..', 'Logs', '4-checker.log');
+fsSync.mkdirSync(path.dirname(logPath), { recursive: true });
+fsSync.writeFileSync(logPath, '');
+function log(message) {
+   const timestamp = new Date().toISOString().replace('T', ' ').slice(0, 19);
+   const logMessage = `[${timestamp}] ${message}\n`;
+   fsSync.appendFileSync(logPath, logMessage);
+}
 
-// Create readline interface
-let rl = readline.createInterface({
-    input: process.stdin,
-    output: process.stdout
-});
 
-const question = (query) => new Promise((resolve) => rl.question(query, resolve));
-
-const openai = new OpenAI({
-    apiKey: process.env.OPENAI_API_KEY,
-    baseURL: process.env.OPENAI_API_ENDPOINT,
-});
+//
 
 // Initialize spreadsheet
 const spreadsheet = new ThousandXspreadsheeT({
@@ -110,19 +109,23 @@ Example output:
                 return json;
             } catch (e) {
                 console.error('Failed to parse ChatGPT response');
+                log('Failed to parse ChatGPT response');
                 console.log(completion.choices[0].message.content);
                 return {};
             }
         } catch (error) {
             console.error(`Attempt ${attempt}/${maxRetries} failed:`, error.message);
+            log(`Attempt ${attempt}/${maxRetries} failed: ${error.message}`);
 
             if (attempt === maxRetries) {
                 console.error('Max retries reached, quitting');
+                log('Max retries reached, quitting');
                 process.exit(1);
                 return {};
             }
 
             console.log(`Waiting ${delay / 1000} seconds before retry...`);
+            log(`Waiting ${delay/1000} seconds before retry...`);
             await new Promise(resolve => setTimeout(resolve, delay));
         }
     }
@@ -221,9 +224,12 @@ async function main() {
         }
 
         console.log('Starting translation check...');
+        log('Starting translation check...');
 
         // Get and merge all data
         const allTranslations = await mergeData();
+        log("Merge complete. Total keys: " + Object.keys(allTranslations).length);
+        console.log("Merge complete. Total keys: " + Object.keys(allTranslations).length);
         const keys = Object.keys(allTranslations).filter(key => !processedKeys.has(key));
 
         let totalProcessed = 0;
@@ -257,6 +263,7 @@ async function main() {
                 console.log(`Remaining strings: ${keys.length - totalProcessed}`);
                 console.log(`Total processed: ${totalProcessed}`);
                 console.log(`Total anomalies found: ${totalAnomalies}`);
+                log(`Batch processed: Processed ${batchKeys.length} keys, anomalies: ${Object.keys(anomalies).length}. Total processed: ${totalProcessed}, Total anomalies: ${totalAnomalies}`);
 
                 await new Promise(resolve => setTimeout(resolve, 1500));
             }
@@ -269,6 +276,7 @@ async function main() {
 
     } catch (e) {
         console.error('Error:', e);
+        log('Error: ' + e);
     } finally {
         if (!rl.closed) {
             rl.close();
@@ -282,6 +290,7 @@ async function gracefulShutdown() {
         const report = JSON.parse(await fs.readFile(path.join(__dirname, 'report.json'), 'utf8'));
         await generateHtmlReport(report);
         console.log('HTML report generated successfully!');
+        log('HTML report generated successfully!');
         const { exec } = require('child_process');
         const reportPath = 'checker-report.htm';
         if (process.platform === 'darwin') {
