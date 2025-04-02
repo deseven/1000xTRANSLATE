@@ -10,7 +10,7 @@
 7. (optional) Run `npm run validate` to see if anything is wrong.
 
 ## Windows
-1. Run **Power Shell** from Start Menu or in Windows Terminal.
+1. Run **Power Shell** from Start Menu or in **Windows Terminal** (recommended).
 2. Run `winget install Git.Git OpenJS.NodeJS.LTS Python.Python.3.9` and wait for the installation to complete. If your system doesn't have `winget` (early versions of Windows 10 or older), install all of that manually.
 3. Open a new instance of **Power Shell** to apply new PATH.
 4. Check that `git --version`, `node --version` and `python --version` commands work.
@@ -21,7 +21,7 @@
 9. Run `npm install` to install wrapper script dependencies.
 10. Run `npm run init` to install all needed internal dependencies.
 11. (optional) Run `npm run validate` to see if anything is wrong.
-12. (optional) To make the usage easier, you can also create a shortcut to `1000xTRANSLATE.bat` on your desktop, it's a simple script that will prompt you to pick from a predefined set of commands.
+12. (optional) To make the usage easier, you can also create a shortcut to `1000xTRANSLATE.ps1` or `1000xTRANSLATE.bat` on your desktop. These are simple scripts that will prompt you to pick from a predefined set of commands. PS version should work on any modern Windows, otherwise use the BAT one.
 
 ## Prepare Google Sheets document
  - Copy [Google Sheets document](https://docs.google.com/spreadsheets/d/10KcHa_iS_RSgsVauCDe6EKbskN4iZfaT9PPjdGJk--4/edit?usp=sharing) under your name.

@@ -1,5 +1,7 @@
 # 1000xTRANSLATE
-A full toolset that will help you to translate [1000xRESIST](https://store.steampowered.com/app/1675830/1000xRESIST/) to your favourite language. Work in progress.
+A full toolset that will help you to translate [1000xRESIST](https://store.steampowered.com/app/1675830/1000xRESIST/) to your favourite language.
+
+**There is now a `1000xr-modding` channel on the official [sunset visitor Discord](https://discord.gg/sunsetvisitor), feel free to join and say hi if you're planning to translate the game.**
 
 
 ## The Idea
@@ -8,6 +10,8 @@ The toolset is intended to be used in the following way:
 2. Toolset uploads all strings into a pre-defined [Google Sheets document](https://docs.google.com/spreadsheets/d/10KcHa_iS_RSgsVauCDe6EKbskN4iZfaT9PPjdGJk--4/edit?usp=sharing).
 3. You translate all game text in Google Sheets, with optional help of LLMs.
 4. Toolset pulls all translated strings and builds a ready to use distribution package with localization.
+
+**NOTE: While this toolset makes the translation 1000 times easier, you still need to have solid computer usage skills to set it up.**
 
 
 ## Roadmap

@@ -6,6 +6,7 @@ The following assumes that you have completed everything in [INSTALL.md](INSTALL
 Run `npm run dump`. It's an alias for the following two commands:
  - `npm run function:exporter` to export game resources
  - `npm run function:sheetifier` to parse text resources and upload strings for translation to the spreadsheet
+
 You can run them individually if needed. Already translated strings won't be touched, so it's safe to run it multiple times.
 
 
@@ -35,15 +36,19 @@ After running the Exporter, you see the textures appear in your `TEXTURES_DIR`, 
 Run `npm run build`. It's an alias for the following two commands:
  - `npm run function:desheetifier` to pull the strings from the spreadsheet and inject them into game resources
  - `npm run function:bbb` to import game resources into bundles
+
 Again, you can run them individually if needed. The result would be the changed game files in your `OUT_DIR`, ready to be put into the game or distributed.
 
 
 ## Maintenance
 Use `npm run clean` to clean exported and parsed resources.
+
 Use `npm run clean:all` to also remove all installed dependencies in Functions and Misc.
+
 None of the above would affect anything in your `DATA_DIR`, `OVERRIDES_DIR` or spreadsheet with translation.
 
 Use `npm run init` to install required dependencies.
+
 Use `npm run validate` to check the env file validity and all dependencies.
 
 
