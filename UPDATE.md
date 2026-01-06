@@ -1,7 +1,7 @@
 # Update
 A simple `git pull` followed by `npm run init` and `npm run validate` should do. I'll try to keep backwards compatibility as much as possible. Additional instructions for specific updates listed below.
 
-## Updating to Jan 6 2026 version
+## Updating to Jan 6 2026 version (tag 060126)
 This version introduces ability to use local XLSX file as a storage. Due to the limitations of the format, the usage of `:` in sheet names is no longer possible.
 
 If you want to keep using Google Sheets:
