@@ -9,6 +9,7 @@
   "author": "deseven",
   "license": "ISC",
   "dependencies": {
+    "exceljs": "^4.4.0",
     "googleapis": "^144.0.0"
   }
 }

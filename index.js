@@ -19,13 +19,20 @@ try {
 
 // Variable definitions
 const variables = {
+    STORAGE: {
+        required_by: ['function:2-sheetifier', 'function:3-translator', 'function:4-checker', 'function:5-desheetifier', 'tool:svscript-convert'],
+        check: 'checkStorageValue',
+        message: 'must be either "GOOGLE" or a valid path to an xlsx file'
+    },
     SPREADSHEET_ID: {
-        required_by: ['function:2-sheetifier', 'function:3-translator', 'function:4-checker', 'function:5-desheetifier', 'tool:svscript-convert']
+        required_by: ['function:2-sheetifier', 'function:3-translator', 'function:4-checker', 'function:5-desheetifier', 'tool:svscript-convert'],
+        conditional: 'requiresGoogleStorage'
     },
     GOOGLE_CREDENTIALS_FILE: {
         required_by: ['function:2-sheetifier', 'function:3-translator', 'function:4-checker', 'function:5-desheetifier', 'tool:svscript-convert'],
         check: 'fileExistsAndNotEmpty',
-        message: 'file does not exist or is empty'
+        message: 'file does not exist or is empty',
+        conditional: 'requiresGoogleStorage'
     },
     VOCAB_CHARS_SHEET_NAME: {
         required_by: ['function:2-sheetifier', 'function:3-translator', 'tool:svscript-convert']
@@ -164,6 +171,24 @@ const checks = {
 
     equalsTrueOrFalse: (value) => {
         return ['true', 'false'].includes(value.toLowerCase());
+    },
+
+    checkStorageValue: (value) => {
+        if (value === 'GOOGLE') {
+            return true;
+        }
+        // Check if it's a valid path that could exist and ends with .xlsx
+        // Allow Windows paths (C:\path\file.xlsx) and Unix paths (./path/file.xlsx)
+        if (!value.endsWith('.xlsx')) {
+            return false;
+        }
+        // Basic path validation - exclude invalid characters but allow : for Windows drive letters
+        const invalidChars = /[<>"|?*]/;
+        return !invalidChars.test(value);
+    },
+
+    requiresGoogleStorage: () => {
+        return process.env.STORAGE === 'GOOGLE';
     }
 };
 
@@ -174,6 +199,12 @@ async function checkEnvironment(requiredFor = null) {
 
     // Function to check a single variable
     const checkVariable = (varName, config) => {
+        // Check if this variable is conditionally required
+        if (config.conditional && !checks[config.conditional]()) {
+            console.log(chalk.blue('[SKIP]'), `${varName} is not required (STORAGE != GOOGLE).`);
+            return true; // Skip this variable, don't count as error
+        }
+
         const value = process.env[varName];
         const requiredInfo = (config.required_by && config.required_by.length > 0) ? ` [Required by: ${config.required_by.join(', ')}]` : '';
         const errorMessage = config.message || (config.check ? 'failed validation check.' : 'is not set or is empty.');

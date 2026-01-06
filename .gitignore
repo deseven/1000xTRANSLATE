@@ -18,3 +18,4 @@ node_modules/
 !data/chapter-definitions.json
 !data/I2.loc.typetree.json
 *.assets
+.DS_Store

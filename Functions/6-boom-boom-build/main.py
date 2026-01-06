@@ -33,7 +33,10 @@ log("==== FUNCTION STARTED ====")
 
 load_dotenv('../../.env')
 UnityPy.config.FALLBACK_UNITY_VERSION = os.getenv('GAME_UNITY_VERSION')
-UnityPy.config.FALLBACK_VERSION_WARNED = True
+
+# Suppress UnityVersionFallbackWarning since we're explicitly setting the fallback version
+import warnings
+warnings.filterwarnings("ignore", category=UnityPy.config.UnityVersionFallbackWarning)
 
 # Handle both relative and absolute paths
 def get_path(env_var):

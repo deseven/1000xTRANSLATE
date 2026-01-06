@@ -19,6 +19,7 @@ function log(message) {
 
 // Initialize spreadsheet
 const spreadsheet = new ThousandXspreadsheeT({
+    STORAGE: process.env.STORAGE,
     GOOGLE_CREDENTIALS_FILE: path.join(__dirname, '../../' + process.env.GOOGLE_CREDENTIALS_FILE),
     SPREADSHEET_ID: process.env.SPREADSHEET_ID,
     ACTORS_SHEET_NAME: process.env.ACTORS_SHEET_NAME,
