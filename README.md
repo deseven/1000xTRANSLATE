@@ -4,7 +4,7 @@ A full toolset that will help you to translate [1000xRESIST](https://store.steam
 **There is now a `1000xr-modding` channel on the official [sunset visitor Discord](https://discord.gg/sunsetvisitor), feel free to join and say hi if you're planning to translate the game.**
 
 > [!IMPORTANT]
-> The toolset currently supports only game build 14633930 (v.1.15554, 13 Jun 2024) or earlier, the newest build 20610998 (4 Nov 2025) is not supported.
+> The toolset currently supports only game build 17930263 (1.15626, 1 Apr 2025) or earlier, the newest build 20610998 (4 Nov 2025) is not supported.
 
 ## The Idea
 The toolset is intended to be used in the following way:
