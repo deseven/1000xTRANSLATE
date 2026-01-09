@@ -32,6 +32,10 @@ def tqdm_wrap(iterable, desc):
 log("==== FUNCTION STARTED ====")
 
 load_dotenv('../../.env')
+
+if os.getenv('SKIP_TEXTURES', '').lower() == 'true':
+    EXPORT_TEXTURES = False
+    log("SKIP_TEXTURES is enabled - texture export disabled")
 UnityPy.config.FALLBACK_UNITY_VERSION = os.getenv('GAME_UNITY_VERSION')
 
 # Suppress UnityVersionFallbackWarning since we're explicitly setting the fallback version

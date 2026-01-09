@@ -32,6 +32,10 @@ def tqdm_wrap(iterable, desc):
 log("==== FUNCTION STARTED ====")
 
 load_dotenv('../../.env')
+
+if os.getenv('SKIP_TEXTURES', '').lower() == 'true':
+    IMPORT_TEXTURES = False
+    log("SKIP_TEXTURES is enabled - texture import disabled")
 UnityPy.config.FALLBACK_UNITY_VERSION = os.getenv('GAME_UNITY_VERSION')
 
 # Suppress UnityVersionFallbackWarning since we're explicitly setting the fallback version
@@ -110,6 +114,14 @@ textures_list_path = os.path.join(os.path.dirname(__file__), '../', '../', 'Data
 log(f"Reading file: {textures_list_path}")
 with open(textures_list_path, 'r', encoding='utf-8') as f:
     textures = [line.strip() for line in f.readlines()]
+
+if os.path.exists(out_dir):
+    log(f"Cleaning output directory: {out_dir}")
+    print(f"Cleaning output directory: ",end='')
+    import shutil
+    shutil.rmtree(out_dir)
+    log("Output directory cleaned")
+    print('1/1')
 
 if IMPORT_MAIN:
     print('Importing I2Languages: ',end='')

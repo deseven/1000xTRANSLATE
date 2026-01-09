@@ -68,6 +68,11 @@ const variables = {
         check: 'equalsTrueOrFalse',
         message: "does not equal to 'true' or 'false'"
     },
+    SKIP_TEXTURES: {
+        required_by: [],
+        check: 'equalsTrueOrFalse',
+        message: "does not equal to 'true' or 'false'"
+    },
     RES_DIR: {
         required_by: ['function:1-exporter', 'function:6-boom-boom-build'],
         check: 'validDirOrCreatable',
@@ -76,7 +81,8 @@ const variables = {
     TEXTURES_DIR: {
         required_by: ['function:1-exporter'],
         check: 'validDirOrCreatable',
-        message: 'is not a valid directory or cannot be created'
+        message: 'is not a valid directory or cannot be created',
+        conditional: 'requiresTextures'
     },
     OVERRIDES_DIR: {
         required_by: [],
@@ -189,6 +195,10 @@ const checks = {
 
     requiresGoogleStorage: () => {
         return process.env.STORAGE === 'GOOGLE';
+    },
+
+    requiresTextures: () => {
+        return process.env.SKIP_TEXTURES !== 'true';
     }
 };
 
@@ -201,22 +211,41 @@ async function checkEnvironment(requiredFor = null) {
     const checkVariable = (varName, config) => {
         // Check if this variable is conditionally required
         if (config.conditional && !checks[config.conditional]()) {
-            console.log(chalk.blue('[SKIP]'), `${varName} is not required (STORAGE != GOOGLE).`);
+            let skipMessage;
+            if (config.conditional === 'requiresGoogleStorage') {
+                skipMessage = `${varName} is not required (STORAGE != GOOGLE).`;
+            } else if (config.conditional === 'requiresTextures') {
+                skipMessage = `${varName} is not required (SKIP_TEXTURES = true).`;
+            } else {
+                skipMessage = `${varName} is not required.`;
+            }
+            console.log(chalk.blue('[SKIPPED]'), skipMessage);
             return true; // Skip this variable, don't count as error
         }
 
         const value = process.env[varName];
         const requiredInfo = (config.required_by && config.required_by.length > 0) ? ` [Required by: ${config.required_by.join(', ')}]` : '';
         const errorMessage = config.message || (config.check ? 'failed validation check.' : 'is not set or is empty.');
+        const isOptional = !config.required_by || config.required_by.length === 0;
 
         if (!value) {
-            console.log(chalk.yellow('[WARNING]'), `${varName} ${errorMessage}${requiredInfo}`);
-            return false;
+            if (isOptional) {
+                console.log(chalk.blue('[SKIPPED]'), `${varName} is optional and not set.`);
+                return true; // Optional variables don't count as errors
+            } else {
+                console.log(chalk.yellow('[WARNING]'), `${varName} ${errorMessage}${requiredInfo}`);
+                return false;
+            }
         }
 
         if (config.check && !checks[config.check](value)) {
-            console.log(chalk.yellow('[WARNING]'), `${varName} ${errorMessage}${requiredInfo}`);
-            return false;
+            if (isOptional) {
+                console.log(chalk.yellow('[WARNING]'), `${varName} ${errorMessage} (optional)`);
+                return true; // Optional variables with invalid values don't count as errors
+            } else {
+                console.log(chalk.yellow('[WARNING]'), `${varName} ${errorMessage}${requiredInfo}`);
+                return false;
+            }
         }
 
         console.log(chalk.green('[OK]'), `${varName} is set and valid.`);
