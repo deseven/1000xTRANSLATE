@@ -67,7 +67,7 @@ Use `npm run init` to install required dependencies.
 Use `npm run validate` to check the env file validity and all dependencies.
 
 > [!CAUTION]
-> If you're using local XLSX file, make sure to backup it regularly (or put under versio control), otherwise you're risking to lose all your work in case something glitches out!
+> If you're using local XLSX file, make sure to backup it regularly (or put under version control), otherwise you're risking to lose all your work in case something glitches out!
 
 
 ## Troubleshooting

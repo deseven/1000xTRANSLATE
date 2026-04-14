@@ -4,7 +4,7 @@ A full toolset that will help you to translate [1000xRESIST](https://store.steam
 **There is now a `1000xr-modding` channel on the official [sunset visitor Discord](https://discord.gg/sunsetvisitor), feel free to join and say hi if you're planning to translate the game.**
 
 > [!IMPORTANT]
-> The toolset currently supports game build 20610998 (4 Nov 2025) or higher, for earlier patches download release **26.2** from the releases section of this repo.
+> The toolset currently supports game build 20610998 (4 Nov 2025) or higher, for earlier patches download release **26.2** from the [Releases section](https://github.com/deseven/1000xTRANSLATE/releases) of this repo.
 
 ## The Idea
 The toolset is intended to be used in the following way:
@@ -36,10 +36,10 @@ The toolset is intended to be used in the following way:
 | Boom Boom Build   | ✅    | Imports required game data, creates distribution packages           |
 
 ### Exporter
-Exports required game data from `GAME_DIR` to `RES_DIR` using [UnityPy](https://github.com/K0lb3/UnityPy). Game files that we need are `resources.assets` and individual bundles listed in [the bundles list](data/bundles.list).
+Exports required game data from `GAME_DIR` to `RES_DIR` using [UnityPy](https://github.com/K0lb3/UnityPy). Exporter automatically searches for all needed resources in the game data, so this should (mostly) be version-agnostic.
 
 ### Sheetifier
-Parses exported game data from `RES_DIR` into human-readable format, imports it into the pre-defined Google Sheets document (`SPREADSHEET_ID` and the rest) or local file. If there already were some strings, it appends only missing strings. The function tries to sort the strings into chapters (see [chapter definitions](data/chapter-definitions.json)). The name is non-negotiable.
+Parses exported game data from `RES_DIR` into human-readable format, imports it into the pre-defined Google Sheets document (`SPREADSHEET_ID` and the rest) or local file. If there already were some strings, it appends only missing strings. The function tries to sort the strings into chapters (see [chapter definitions](Data/chapter-definitions.json)). The name is non-negotiable.
 
 ### Translator
 *(optional)* Automatically or semi-automatically translates untranslated dialogues from Google Sheets using vocabulary and context. Marks translated strings with red (GSheets only), because you probably don't want to have unedited machine translation.
@@ -51,7 +51,7 @@ Parses exported game data from `RES_DIR` into human-readable format, imports it 
 Pulls translated strings from Google Sheets or local file and inserts them into the game data in `RES_DIR`.
 
 ### Boom Boom Build
-Imports resources from `RES_DIR` into the game files, outputs changed bundles ready to be replaced in the game directory.
+Imports resources from `RES_DIR` into the game files, outputs changed bundles ready to be replaced in the game directory or builds a standalone patcher.
 
 
 ## Prerequisites
@@ -62,11 +62,11 @@ Imports resources from `RES_DIR` into the game files, outputs changed bundles re
 
 
 ## Installation
-See [INSTALL.md](INSTALL.md) for installation instructions.  
-See [UPDATE.md](UPDATE.md) for update instructions if you're already using the toolset and want to update to the latest version.
+ - See [INSTALL.md](INSTALL.md) for installation instructions
+ - See [UPDATE.md](UPDATE.md) for update instructions if you're already using the toolset and want to update to the latest version
 
 ## Usage
-See [USAGE.md](USAGE.md) for usage instructions.
+ - See [USAGE.md](USAGE.md) for usage instructions
 
 
 ## Thanks

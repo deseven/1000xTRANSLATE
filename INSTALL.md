@@ -1,8 +1,10 @@
 # Installation
 
 ## Linux/macOS
-1. Install Git, Node.js LTS and Python 3.9 or higher with your favourite package manager.
-2. Download and unpack to `1000xTRANSLATE` folder a specific release from the **Releases** section of this repo or do `git clone https://github.com/deseven/1000xTRANSLATE.git`.
+1. Install Node.js LTS and Python 3.9 or higher with your favourite package manager.
+2. Get the toolset using one of the following methods:
+   - **Release (recommended):** Download and unpack a specific release from the [Releases](https://github.com/deseven/1000xTRANSLATE/releases) page into a `1000xTRANSLATE` folder.
+   - **Git:** `git clone https://github.com/deseven/1000xTRANSLATE.git`
 3. Run `cd 1000xTRANSLATE`.
 4. Copy `.env.example` to `.env` and edit it, following the comments. As a bare minimum, you should define `STORAGE` and `GAME_DATA_DIR`.
 5. Run `npm install` to install wrapper script dependencies.
@@ -11,10 +13,12 @@
 
 ## Windows
 1. Run **Power Shell** from Start Menu or in **Windows Terminal** (recommended).
-2. Run `winget install Git.Git OpenJS.NodeJS.LTS Python.Python.3.9` and wait for the installation to complete. If your system doesn't have `winget` (early versions of Windows 10 or older), install all of that manually.
+2. Run `winget install OpenJS.NodeJS.LTS Python.Python.3.9` and wait for the installation to complete. If your system doesn't have `winget` (early versions of Windows 10 or older), install both manually.
 3. Open a new instance of **Power Shell** to apply new PATH.
-4. Check that `git --version`, `node --version` and `python --version` commands work.
-5. Download and unpack to `1000xTRANSLATE` folder a specific release from the **Releases** section of this repo or do `git clone https://github.com/deseven/1000xTRANSLATE.git`.
+4. Check that `node --version` and `python --version` commands work.
+5. Get the toolset using one of the following methods:
+   - **Release (recommended):** Download and unpack a specific release from the [Releases](https://github.com/deseven/1000xTRANSLATE/releases) page into a `1000xTRANSLATE` folder.
+   - **Git:** Install Git (`winget install Git.Git`), open a new **Power Shell** instance, then run `git clone https://github.com/deseven/1000xTRANSLATE.git`.
 6. Run `cd 1000xTRANSLATE`.
 7. Run `cp .env.example .env`.
 8. Edit `.env` file in any text editor, following the comments in it. As a bare minimum, you should define `STORAGE` and `GAME_DATA_DIR` (for example `C:\Steam\steamapps\common\1000xRESIST\1000xRESIST_Data`).
