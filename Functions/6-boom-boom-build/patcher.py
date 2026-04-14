@@ -10,16 +10,15 @@ from PIL import Image
 
 def _write_atomic(path, data):
     """Write data to a temp file in the same directory, then replace the target.
-
-    This avoids the read-then-write-to-same-file corruption that occurs when
-    UnityPy holds a lazy file handle open while we overwrite the source path.
     """
     dir_ = os.path.dirname(path)
     fd, tmp_path = tempfile.mkstemp(dir=dir_)
     try:
         with os.fdopen(fd, 'wb') as f:
             f.write(data)
-        os.replace(tmp_path, path)
+        if os.path.exists(path):
+            os.unlink(path)
+        os.rename(tmp_path, path)
     except Exception:
         try:
             os.unlink(tmp_path)
