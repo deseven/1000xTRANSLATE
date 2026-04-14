@@ -186,6 +186,11 @@ class ResourcePatcher:
                         out_path = os.path.join(self.out_dir, 'resources.assets')
                         self.log(f"Writing file: {out_path}")
                         data_bytes = env.file.save(packer="original")
+                        # Release UnityPy's file handle before replacing the file.
+                        # On Windows, os.replace() raises [WinError 5] if the target
+                        # still has open handles (UnityPy reads lazily from disk).
+                        del env
+                        gc.collect()
                         _write_atomic(out_path, data_bytes)
                         self.on_progress('i2languages', 1, 1)
                         self.log("I2Languages successfully imported")
@@ -210,6 +215,7 @@ class ResourcePatcher:
             needs_saving = False
             file_path = os.path.join(self.bundle_dir, bundle_name)
             self.log(f"Reading file: {file_path}")
+            env = None
             try:
                 env = UnityPy.load(file_path)
                 bundle_strings_count = 0
@@ -236,13 +242,17 @@ class ResourcePatcher:
                     out_bundle_path = os.path.join(self.out_dir, self.STREAMING_ASSETS_PATH, bundle_name)
                     os.makedirs(os.path.dirname(out_bundle_path), exist_ok=True)
                     self.log(f"Writing file: {out_bundle_path} (imported {bundle_strings_count} strings)")
-                    _write_atomic(out_bundle_path, env.file.save(packer="original"))
+                    data_bytes = env.file.save(packer="original")
+                    del env
+                    gc.collect()
+                    _write_atomic(out_bundle_path, data_bytes)
                     self.bundles_num += 1
             except Exception as e:
                 self.log(f"Error processing bundle {bundle_name}: {str(e)}")
                 self.log(traceback.format_exc())
             finally:
-                del env
+                if env is not None:
+                    del env
                 if idx % 50 == 0:
                     gc.collect()
         self.on_progress('strings', total, total)
@@ -254,6 +264,7 @@ class ResourcePatcher:
             needs_saving = False
             file_path = os.path.join(self.bundle_dir, bundle_name)
             self.log(f"Reading file: {file_path}")
+            env = None
             try:
                 env = UnityPy.load(file_path)
                 bundle_dialogues_count = 0
@@ -305,13 +316,17 @@ class ResourcePatcher:
                     out_bundle_path = os.path.join(self.out_dir, self.STREAMING_ASSETS_PATH, bundle_name)
                     os.makedirs(os.path.dirname(out_bundle_path), exist_ok=True)
                     self.log(f"Writing file: {out_bundle_path} (imported {bundle_dialogues_count} dialogue databases)")
-                    _write_atomic(out_bundle_path, env.file.save(packer="original"))
+                    data_bytes = env.file.save(packer="original")
+                    del env
+                    gc.collect()
+                    _write_atomic(out_bundle_path, data_bytes)
                     self.bundles_num += 1
             except Exception as e:
                 self.log(f"Error processing dialogue bundle {bundle_name}: {str(e)}")
                 self.log(traceback.format_exc())
             finally:
-                del env
+                if env is not None:
+                    del env
                 if idx % 50 == 0:
                     gc.collect()
         self.on_progress('dialogues', total, total)
@@ -329,6 +344,7 @@ class ResourcePatcher:
             needs_saving = False
             file_path = os.path.join(self.bundle_dir, bundle_name)
             self.log(f"Reading file: {file_path}")
+            env = None
             try:
                 env = UnityPy.load(file_path)
                 bundle_textures_count = 0
@@ -356,13 +372,17 @@ class ResourcePatcher:
                     out_bundle_path = os.path.join(self.out_dir, self.STREAMING_ASSETS_PATH, bundle_name)
                     os.makedirs(os.path.dirname(out_bundle_path), exist_ok=True)
                     self.log(f"Writing file: {out_bundle_path} (imported {bundle_textures_count} textures)")
-                    _write_atomic(out_bundle_path, env.file.save(packer="original"))
+                    data_bytes = env.file.save(packer="original")
+                    del env
+                    gc.collect()
+                    _write_atomic(out_bundle_path, data_bytes)
                     self.bundles_num += 1
             except Exception as e:
                 self.log(f"Error processing texture bundle {bundle_name}: {str(e)}")
                 self.log(traceback.format_exc())
             finally:
-                del env
+                if env is not None:
+                    del env
                 if idx % 50 == 0:
                     gc.collect()
         self.on_progress('textures', total, total)
