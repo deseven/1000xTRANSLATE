@@ -261,6 +261,7 @@ Do not output anything else except for a valid json array of translated strings.
             log('Updating spreadsheet with translations');
             await spreadsheet.replaceDialogues(updates);
             await spreadsheet.markDialogues(keysToMark, '#ffaaaa', 'translated');
+            await spreadsheet.commit();
             log('Spreadsheet updated successfully');
 
             processedStrings += sortedEntries.length;

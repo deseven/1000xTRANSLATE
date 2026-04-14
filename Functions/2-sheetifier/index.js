@@ -339,7 +339,7 @@ async function main() {
 
         // Load and process dialogues
         log("Uploading dialogues...");
-        spinner = nanospinner.createSpinner('Uploading dialogues (could take a while)...').start();
+        spinner = nanospinner.createSpinner('Uploading dialogues...').start();
         const dialoguesData = JSON.parse(fs.readFileSync(files.dialogues, 'utf8'));
         const dialoguesStrings = {};
         const actorTexts = new Set();
@@ -394,6 +394,10 @@ async function main() {
             }
         }
         await spreadsheet.replaceStrings(stringsStrings);
+        spinner.success();
+
+        spinner = nanospinner.createSpinner('Saving spreadsheet...').start();
+        await spreadsheet.commit();
         spinner.success();
 
         console.log();

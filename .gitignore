@@ -5,6 +5,7 @@ node_modules/
 *.txt
 *.bundle
 *.json
+*.xlsx
 *.zip
 *.log
 *.htm

@@ -67,6 +67,7 @@ class ThousandXspreadsheeT {
     async #saveWorkbook() {
         if (this.storageType !== 'GOOGLE' && this.workbook) {
             await this.workbook.xlsx.writeFile(this.filePath);
+            this._dirty = false;
         }
     }
 
@@ -241,7 +242,7 @@ class ThousandXspreadsheeT {
             row.commit();
         });
 
-        await this.#saveWorkbook();
+        this._dirty = true;
     }
 
     async #updateRows(sheetName, updates) {
@@ -294,7 +295,7 @@ class ThousandXspreadsheeT {
             });
         });
 
-        await this.#saveWorkbook();
+        this._dirty = true;
     }
 
     async #getSheetId(sheetName) {
@@ -336,13 +337,18 @@ class ThousandXspreadsheeT {
         const updates = [];
         const toAppend = {};
 
+        // Build a lowercase lookup map: lowercaseKey -> { originalKey, rowIndex }
+        const existingKeys = Object.keys(existing);
+        const lookupMap = new Map(
+            existingKeys.map((k, i) => [k.toLowerCase(), { originalKey: k, rowIndex: i + 2 }])
+        );
+
         for (const [key, value] of Object.entries(strings)) {
-            const existingKey = Object.keys(existing).find(k => k.toLowerCase() === key.toLowerCase());
-            if (existingKey !== undefined) {
+            const found = lookupMap.get(key.toLowerCase());
+            if (found !== undefined) {
                 if (value != null) {
-                    const rowIndex = Object.keys(existing).indexOf(existingKey) + 2;
                     updates.push({
-                        range: `B${rowIndex}`,
+                        range: `B${found.rowIndex}`,
                         values: [value]
                     });
                 }
@@ -403,17 +409,22 @@ class ThousandXspreadsheeT {
         const updates = [];
         const toAppend = {};
 
+        // Build a lowercase lookup map: lowercaseKey -> { originalKey, rowIndex }
+        const existingKeys = Object.keys(existing);
+        const lookupMap = new Map(
+            existingKeys.map((k, i) => [k.toLowerCase(), { originalKey: k, rowIndex: i + 2 }])
+        );
+
         for (const [key, data] of Object.entries(strings)) {
-            const existingKey = Object.keys(existing).find(k => k.toLowerCase() === key.toLowerCase());
-            if (existingKey !== undefined) {
-                const rowIndex = Object.keys(existing).indexOf(existingKey) + 2;
+            const found = lookupMap.get(key.toLowerCase());
+            if (found !== undefined) {
                 if (data.original != null || data.translated != null) {
                     const updateRow = [
-                        data.original != null ? data.original : existing[existingKey].original,
-                        data.translated != null ? data.translated : existing[existingKey].translated
+                        data.original != null ? data.original : existing[found.originalKey].original,
+                        data.translated != null ? data.translated : existing[found.originalKey].translated
                     ];
                     updates.push({
-                        range: `B${rowIndex}:C${rowIndex}`,
+                        range: `B${found.rowIndex}:C${found.rowIndex}`,
                         values: updateRow
                     });
                 }
@@ -503,18 +514,23 @@ class ThousandXspreadsheeT {
         const updates = [];
         const toAppend = {};
 
+        // Build a lowercase lookup map: lowercaseKey -> { originalKey, rowIndex }
+        const existingKeys = Object.keys(existing);
+        const lookupMap = new Map(
+            existingKeys.map((k, i) => [k.toLowerCase(), { originalKey: k, rowIndex: i + 2 }])
+        );
+
         for (const [key, data] of Object.entries(strings)) {
-            const existingKey = Object.keys(existing).find(k => k.toLowerCase() === key.toLowerCase());
-            if (existingKey !== undefined) {
-                const rowIndex = Object.keys(existing).indexOf(existingKey) + 2;
+            const found = lookupMap.get(key.toLowerCase());
+            if (found !== undefined) {
                 if (data.actor != null || data.original != null || data.translated != null) {
                     const updateRow = [
-                        data.actor != null ? data.actor : existing[existingKey].actor,
-                        data.original != null ? data.original : existing[existingKey].original,
-                        data.translated != null ? data.translated : existing[existingKey].translated
+                        data.actor != null ? data.actor : existing[found.originalKey].actor,
+                        data.original != null ? data.original : existing[found.originalKey].original,
+                        data.translated != null ? data.translated : existing[found.originalKey].translated
                     ];
                     updates.push({
-                        range: `B${rowIndex}:D${rowIndex}`,
+                        range: `B${found.rowIndex}:D${found.rowIndex}`,
                         values: updateRow
                     });
                 }
@@ -584,6 +600,12 @@ class ThousandXspreadsheeT {
         // For local storage, we skip applying formatting to preserve existing file formatting
         // This is a no-op for local files - formatting is only applied for Google Sheets
         return;
+    }
+
+    async commit() {
+        if (this.storageType !== 'GOOGLE' && this._dirty) {
+            await this.#saveWorkbook();
+        }
     }
 
 }

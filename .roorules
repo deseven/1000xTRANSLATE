@@ -1,0 +1,3 @@
+This is a toolset aimed to create localizations for a game called 1000xRESIST. It consists of 6 main functions (under `Functions`) and various tools (under `Misc`). Each function is basically an independent script doing a specific task. Depending on a function, it's written either in JS or Python. The `index.js` is a management/statrup script. You can also check out the `README.md` for more general info.
+
+Instead of rewriting files completely it's better to patch them to not waste time/tokens.
