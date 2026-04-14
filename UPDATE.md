@@ -2,7 +2,7 @@
 **If you cloned the toolset with git:**  
 Do a `git pull`.
 
-**If you downloaded a tagged release:**
+**If you downloaded a tagged release:**  
 Download a new one from releases and unpack to the same dir, replacing all files.
 
 After that do `npm run clean:all` followed by `npm run init`, `npm run validate` and `npm run dump`. I'll try to keep backwards compatibility as much as possible. Additional instructions for specific updates listed below.
