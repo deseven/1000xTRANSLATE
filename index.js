@@ -63,6 +63,11 @@ const variables = {
     GAME_UNITY_VERSION: {
         required_by: ['function:1-exporter', 'function:6-boom-boom-build']
     },
+    BBB_CREATE_PATCHER: {
+        required_by: [],
+        check: 'equalsTrueOrFalse',
+        message: "does not equal to 'true' or 'false'"
+    },
     UNITYPY_USE_PYTHON_PARSER: {
         required_by: [],
         check: 'equalsTrueOrFalse',

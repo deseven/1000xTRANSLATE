@@ -1,17 +1,17 @@
 import os
-import json
-import UnityPy
-from PIL import Image
-from dotenv import load_dotenv
-from tqdm import tqdm
+import sys
+import shutil
+import subprocess
 import traceback
 from datetime import datetime
+from tqdm import tqdm
+from dotenv import load_dotenv
 
 # For debugging/development purposes
-IMPORT_MAIN = True
-IMPORT_STRINGS = True
+IMPORT_MAIN      = True
+IMPORT_STRINGS   = True
 IMPORT_DIALOGUES = True
-IMPORT_TEXTURES = True
+IMPORT_TEXTURES  = True
 
 log_path = os.path.join(os.path.dirname(__file__), '../', '../', 'Logs', '6-boom-boom-build.log')
 os.makedirs(os.path.dirname(log_path), exist_ok=True)
@@ -22,13 +22,6 @@ def log(message):
         timestamp = datetime.now().strftime('[%Y-%m-%d %H:%M:%S]')
         log_file.write(f"{timestamp} {message}\n")
 
-def tqdm_wrap(iterable, desc):
-    bar_format = "{desc:<21}{percentage:3.0f}%|{bar}{r_bar}"
-    if os.name == 'nt':  # Windows
-        return tqdm(iterable=iterable, desc=desc, bar_format=bar_format, ascii=False)
-    else:
-        return tqdm(iterable=iterable, desc=desc, bar_format=bar_format)
-
 log("==== FUNCTION STARTED ====")
 
 load_dotenv('../../.env')
@@ -36,11 +29,16 @@ load_dotenv('../../.env')
 if os.getenv('SKIP_TEXTURES', '').lower() == 'true':
     IMPORT_TEXTURES = False
     log("SKIP_TEXTURES is enabled - texture import disabled")
-UnityPy.config.FALLBACK_UNITY_VERSION = os.getenv('GAME_UNITY_VERSION')
 
 # Suppress UnityVersionFallbackWarning since we're explicitly setting the fallback version
 import warnings
+import UnityPy
 warnings.filterwarnings("ignore", category=UnityPy.config.UnityVersionFallbackWarning)
+
+if os.getenv('UNITYPY_USE_PYTHON_PARSER') == 'true':
+    from UnityPy.helpers import TypeTreeHelper
+    TypeTreeHelper.read_typetree_boost = False
+    log("Using Python parser for TypeTree")
 
 # Handle both relative and absolute paths
 def get_path(env_var):
@@ -52,10 +50,10 @@ def get_path(env_var):
         return path
     return os.path.join('../', '../', path)
 
-data_dir = get_path('GAME_DATA_DIR')
-res_dir = get_path('RES_DIR')
+data_dir      = get_path('GAME_DATA_DIR')
+res_dir       = get_path('RES_DIR')
 overrides_dir = get_path('OVERRIDES_DIR')
-out_dir = os.path.join(get_path('OUT_DIR'), '1000xRESIST_Data')
+out_dir       = get_path('OUT_DIR')
 
 log(f"Environment configuration:")
 log(f"  GAME_UNITY_VERSION: {os.getenv('GAME_UNITY_VERSION')}")
@@ -64,258 +62,258 @@ log(f"  RES_DIR: {res_dir}")
 log(f"  OVERRIDES_DIR: {overrides_dir}")
 log(f"  OUT_DIR: {out_dir}")
 log(f"  UNITYPY_USE_PYTHON_PARSER: {os.getenv('UNITYPY_USE_PYTHON_PARSER')}")
+log(f"  BBB_CREATE_PATCHER: {os.getenv('BBB_CREATE_PATCHER')}")
 
-strings_num = 0
-textures_num = 0
-dialogues_num = 0
-bundles_num = 0
+typetree_path      = os.path.join(os.path.dirname(__file__), '../', '../', 'Data', 'I2.loc.typetree.json')
+textures_list_path = os.path.join(os.path.dirname(__file__), '../', '../', 'Data', 'textures.list')
 
-if os.getenv('UNITYPY_USE_PYTHON_PARSER') == 'true':
-    from UnityPy.helpers import TypeTreeHelper
-    TypeTreeHelper.read_typetree_boost = False
-    log("Using Python parser for TypeTree")
+# ===========================================================================
+# BBB_CREATE_PATCHER mode - build a standalone patcher executable
+# ===========================================================================
 
-streaming_assets_path = os.path.join('StreamingAssets', 'aa', 'StandaloneWindows64')
-bundle_dir = os.path.join(data_dir, streaming_assets_path)
-dialogue_bundles = [f for f in os.listdir(bundle_dir) if f.endswith('.bundle') and '_other_' in f]
-texture_bundles = [f for f in os.listdir(bundle_dir) if f.endswith('.bundle') and '_texture_' in f]
-scene_bundles = [f for f in os.listdir(bundle_dir) if f.endswith('.bundle') and '_scenes_' in f]
+if os.getenv('BBB_CREATE_PATCHER', '').lower() == 'true':
+    log("BBB_CREATE_PATCHER is enabled - building patcher executable")
+    print("Building patcher executable...")
 
-log(f"Found bundles: {len(dialogue_bundles)} dialogue, {len(texture_bundles)} texture, {len(scene_bundles)} scene")
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    venv_python = (
+        os.path.join(script_dir, '.venv', 'Scripts', 'python.exe')
+        if os.name == 'nt'
+        else os.path.join(script_dir, '.venv', 'bin', 'python')
+    )
 
-typetree_path = os.path.join('../','../', 'Data', 'I2.loc.typetree.json')
-log(f"Reading file: {typetree_path}")
-with open(typetree_path, 'r', encoding='utf-8') as f:
-    I2LocTypetree = json.load(f)
+    # Resolve absolute out_dir for the build
+    abs_out_dir = os.path.abspath(out_dir) if out_dir else os.path.join(script_dir, '..', '..', '!distr')
 
-i2languages_path = os.path.join(res_dir, 'I2Languages-mod.json')
-if not os.path.exists(i2languages_path) or os.path.getsize(i2languages_path) == 0:
-    error_msg = "Error: I2Languages-mod.json is missing or empty. Run Desheetifier first?"
-    log(error_msg)
-    print(error_msg)
-    exit(1)
+    # Clean the output directory first to avoid stale artefacts
+    if os.path.exists(abs_out_dir):
+        log(f"Cleaning output directory: {abs_out_dir}")
+        print(f"Cleaning output directory...")
+        shutil.rmtree(abs_out_dir)
+    os.makedirs(abs_out_dir, exist_ok=True)
 
-strings_path = os.path.join(res_dir, 'strings-mod.json')
-if not os.path.exists(strings_path) or os.path.getsize(strings_path) == 0:
-    error_msg = "Error: strings-mod.json is missing or empty. Run Desheetifier first?"
-    log(error_msg)
-    print(error_msg)
-    exit(1)
+    # PyInstaller separator is ';' on Windows, ':' on Unix
+    sep = ';' if os.name == 'nt' else ':'
 
-log(f"Reading file: {i2languages_path}")
-with open(i2languages_path, 'r', encoding='utf-8') as f:
-    I2Languages = json.load(f)
+    # Prepare the data directory that will sit next to the executable
+    patcher_data_dir = os.path.join(abs_out_dir, 'data')
+    os.makedirs(patcher_data_dir, exist_ok=True)
 
-log(f"Reading file: {strings_path}")
-with open(strings_path, 'r', encoding='utf-8') as f:
-    strings = json.load(f)
+    # Copy static data files
+    shutil.copy2(typetree_path, os.path.join(patcher_data_dir, 'I2.loc.typetree.json'))
+    shutil.copy2(textures_list_path, os.path.join(patcher_data_dir, 'textures.list'))
+    log(f"Copied data files to {patcher_data_dir}")
 
-textures_list_path = os.path.join(os.path.dirname(__file__), '../', '../', 'Data/textures.list')
-log(f"Reading file: {textures_list_path}")
-with open(textures_list_path, 'r', encoding='utf-8') as f:
-    textures = [line.strip() for line in f.readlines()]
+    # Write unity version hint
+    unity_version = os.getenv('GAME_UNITY_VERSION', '')
+    if unity_version:
+        with open(os.path.join(patcher_data_dir, 'unity_version.txt'), 'w', encoding='utf-8') as f:
+            f.write(unity_version)
+        log(f"Wrote unity_version.txt: {unity_version}")
 
-if os.path.exists(out_dir):
-    log(f"Cleaning output directory: {out_dir}")
-    print(f"Cleaning output directory: ",end='')
-    import shutil
-    shutil.rmtree(out_dir)
-    log("Output directory cleaned")
-    print('1/1')
+    # Copy only *-mod.json files from res_dir (preserving subdirectory structure)
+    patcher_res_dir = os.path.join(abs_out_dir, 'resources')
+    if os.path.isdir(res_dir):
+        copied_res = 0
+        for dirpath, dirnames, filenames in os.walk(res_dir):
+            for filename in filenames:
+                if filename.endswith('-mod.json'):
+                    src = os.path.join(dirpath, filename)
+                    rel = os.path.relpath(dirpath, res_dir)
+                    dst_dir = os.path.join(patcher_res_dir, rel)
+                    os.makedirs(dst_dir, exist_ok=True)
+                    shutil.copy2(src, os.path.join(dst_dir, filename))
+                    copied_res += 1
+        log(f"Copied {copied_res} *-mod.json files from {res_dir} to {patcher_res_dir}")
+        print(f"Copied {copied_res} resource files to: {patcher_res_dir}")
+    else:
+        log(f"Warning: RES_DIR '{res_dir}' does not exist, skipping resource copy")
+        print(f"Warning: RES_DIR '{res_dir}' does not exist, skipping resource copy")
 
-if IMPORT_MAIN:
-    print('Importing I2Languages: ',end='')
-    file_path = os.path.join(data_dir, 'resources.assets')
-    log(f"Reading file: {file_path}")
+    # Copy only PNG files from overrides dir
+    if overrides_dir and os.path.isdir(overrides_dir):
+        patcher_overrides_dir = os.path.join(abs_out_dir, 'overrides')
+        os.makedirs(patcher_overrides_dir, exist_ok=True)
+        copied_overrides = 0
+        for filename in os.listdir(overrides_dir):
+            if filename.lower().endswith('.png'):
+                src = os.path.join(overrides_dir, filename)
+                if os.path.isfile(src):
+                    shutil.copy2(src, os.path.join(patcher_overrides_dir, filename))
+                    copied_overrides += 1
+        log(f"Copied {copied_overrides} PNG overrides from {overrides_dir} to {patcher_overrides_dir}")
+        print(f"Copied {copied_overrides} texture overrides to: {patcher_overrides_dir}")
+
+    # PyInstaller can only build for the current platform.
+    # The executable is placed directly in abs_out_dir alongside data/, resources/, overrides/.
+    wrapper_path = os.path.join(script_dir, 'wrapper.py')
+    patcher_path = os.path.join(script_dir, 'patcher.py')
+
+    print("Building patcher executable...")
+    log("Building patcher executable")
+
+    # Collect UnityPy and all its dependencies that contain native binaries or data files
+    collect_packages = [
+        'UnityPy',
+        'fmod_toolkit',   # audio: libfmod native dylib/dll
+        'pyfmodex',       # audio: fmod Python bindings
+        'astc_encoder',   # texture: ASTC encoder
+        'archspec',       # dep of astc_encoder: CPU microarch JSON data
+        'etcpak',         # texture: ETC compression
+        'texture2ddecoder',  # texture: decoder
+        'brotli',         # compression
+    ]
+    collect_args = []
+    for pkg in collect_packages:
+        collect_args += ['--collect-all', pkg]
+
+    cmd = [
+        venv_python, '-m', 'PyInstaller',
+        '--onefile',
+        '--name', 'patcher',
+        '--distpath', abs_out_dir,
+        '--workpath', os.path.join(script_dir, '.pyinstaller-build'),
+        '--specpath', os.path.join(script_dir, '.pyinstaller-build'),
+        '--add-data', f'{patcher_path}{sep}.',
+    ] + collect_args + [wrapper_path]
+
+    log(f"PyInstaller command: {' '.join(cmd)}")
     try:
-        env = UnityPy.load(file_path)
-        found = False
-        for obj in env.objects:
-            if obj.type.name == 'MonoBehaviour':
-                try:
-                    data = obj.read(check_read=False)
-                    if getattr(data, 'm_Name') == "I2Languages":
-                        found = True
-                except:
-                    continue
-                if found:
-                    obj.save_typetree(I2Languages, I2LocTypetree['I2.Loc.LanguageSourceAsset'])
-                    os.makedirs(out_dir, exist_ok=True)
-                    out_path = os.path.join(out_dir, 'resources.assets')
-                    log(f"Writing file: {out_path}")
-                    with open(out_path, "wb") as f:
-                        f.write(env.file.save(packer="original"))
-                    print('1/1')
-                    log("I2Languages successfully imported")
-                    break
-
-        if not found:
-            error_msg = "Failed to import I2Languages: I2Languages not found in resources.assets"
-            print('failed')
-            log(error_msg)
-            exit(1)
+        result = subprocess.run(cmd, capture_output=True, text=True, cwd=script_dir)
+        if result.returncode != 0:
+            log(f"PyInstaller stderr:\n{result.stderr}")
+            log(f"PyInstaller stdout:\n{result.stdout}")
+            print("Error building patcher. Check the log for details.")
+            sys.exit(1)
+        log(f"Successfully built patcher: {abs_out_dir}")
+        print(f"  -> {abs_out_dir}")
     except Exception as e:
-        error_msg = f"Error importing I2Languages: {str(e)}"
-        log(error_msg)
+        log(f"Exception during build: {str(e)}")
         log(traceback.format_exc())
-        print('failed')
-        exit(1)
+        print(f"Error: {e}")
+        sys.exit(1)
 
-if IMPORT_STRINGS:
-    for bundle_name in tqdm_wrap(iterable=scene_bundles, desc='Importing strings:'):
-        needs_saving = False
-        file_path = os.path.join(bundle_dir, bundle_name)
-        log(f"Reading file: {file_path}")
-        try:
-            env = UnityPy.load(file_path)
-            bundle_strings_count = 0
-            
-            for obj in env.objects:
-                if obj.type.name == 'MonoBehaviour':
-                    if not obj.serialized_type.nodes:
-                        continue
-                    try:
-                        tree = obj.read_typetree()
-                    except Exception as inner_e:
-                        log(f"Error processing object in {bundle_name}: {str(inner_e)}")
-                        continue
-                    # Detect world-space TextMeshPro by structure (script pointer may be cross-bundle)
-                    # World-space TMP has _SortingLayer/_SortingOrder fields; TextMeshProUGUI does not
-                    if 'm_text' in tree and 'm_fontAsset' in tree and '_SortingLayer' in tree:
-                        strings_key = tree['m_text'].replace('\t', '\\t').replace('\n', '\\n')
-                        if strings_key in strings and strings[strings_key] != "":
-                            tree['m_text'] = strings[strings_key].replace('\\t', '\t').replace('\\n', '\n')
-                            obj.save_typetree(tree)
-                            needs_saving = True
-                            strings_num += 1
-                            bundle_strings_count += 1
-            
-            if needs_saving:
-                out_bundle_path = os.path.join(out_dir, streaming_assets_path, bundle_name)
-                os.makedirs(os.path.dirname(out_bundle_path), exist_ok=True)
-                log(f"Writing file: {out_bundle_path} (imported {bundle_strings_count} strings)")
-                with open(out_bundle_path, "wb") as f:
-                    f.write(env.file.save(packer="original"))
-                bundles_num += 1
-        except Exception as e:
-            log(f"Error processing bundle {bundle_name}: {str(e)}")
-            log(traceback.format_exc())
+    # Clean up PyInstaller build artifacts
+    build_dir = os.path.join(script_dir, '.pyinstaller-build')
+    if os.path.exists(build_dir):
+        shutil.rmtree(build_dir)
 
-if IMPORT_DIALOGUES:
-    for bundle_name in tqdm_wrap(iterable=dialogue_bundles, desc='Importing dialogues:'):
-        needs_saving = False
-        file_path = os.path.join(bundle_dir, bundle_name)
-        log(f"Reading file: {file_path}")
-        try:
-            env = UnityPy.load(file_path)
-            bundle_dialogues_count = 0
+    print("\nPatcher build complete.")
+    print(f"Output directory: {abs_out_dir}")
+    log("Patcher build complete")
+    sys.exit(0)
 
-            # Build a path_id -> asset_path lookup from the container
-            pathid_to_asset = {}
-            for asset_path, obj in env.container.items():
-                pathid_to_asset[obj.path_id] = asset_path
 
-            for obj in env.objects:
-                if obj.type.name != 'MonoBehaviour':
-                    continue
-                # Only process objects with an embedded typetree
-                if not obj.serialized_type.nodes:
-                    continue
-                try:
-                    typetree = obj.read_typetree()
-                except Exception as e:
-                    log(f"Warning: failed to read typetree in {bundle_name}: {str(e)}")
-                    continue
+# ===========================================================================
+# Normal mode - patch game resources directly
+# ===========================================================================
 
-                # Detect DialogueDatabase by structure (script pointer is cross-bundle)
-                if not ('conversations' in typetree and 'actors' in typetree and 'items' in typetree):
-                    continue
+from patcher import ResourcePatcher
 
-                asset_path = pathid_to_asset.get(obj.path_id, '')
+strings_num   = 0
+textures_num  = 0
+dialogues_num = 0
+bundles_num   = 0
 
-                if 'DialogueDatabaseArchive' in asset_path: # skip archived convos
-                    continue
+# tqdm progress -> drive tqdm bars
+def make_progress_callback():
+    """Returns an on_progress callback that drives tqdm bars."""
+    bars = {}
 
-                # build mod file path
-                bundle_dest = os.path.join(res_dir, os.path.basename(bundle_name))
-                if asset_path:
-                    asset_dir = os.path.join(bundle_dest, os.path.dirname(asset_path))
-                    filename = os.path.basename(asset_path) + "-mod.json"
-                else:
-                    m_name = typetree.get('m_Name', f'dialogue_{obj.path_id}')
-                    asset_dir = bundle_dest
-                    filename = m_name + "-mod.json"
-                mod_path = os.path.join(asset_dir, filename)
+    def on_progress(stage, current, total):
+        if total == 0:
+            return
+        # i2languages is a single-item operation - just print status
+        if stage == 'i2languages':
+            if current == 0:
+                print('Importing I2Languages: ', end='', flush=True)
+            elif current >= total:
+                print('1/1')
+            return
+        stage_labels = {
+            'strings':   'Importing strings:',
+            'dialogues': 'Importing dialogues:',
+            'textures':  'Importing textures:',
+        }
+        if stage not in bars and stage in stage_labels:
+            bar_format = "{desc:<21}{percentage:3.0f}%|{bar}{r_bar}"
+            bars[stage] = tqdm(
+                total=total,
+                desc=stage_labels[stage],
+                bar_format=bar_format,
+                ascii=(os.name == 'nt'),
+            )
+        if stage in bars:
+            bars[stage].n = current
+            bars[stage].refresh()
+            if current >= total:
+                bars[stage].close()
+                del bars[stage]
 
-                if os.path.exists(mod_path) and os.path.getsize(mod_path) > 0:
-                    log(f"Found modified dialogue: {mod_path} for {asset_path or '(no container path)'}")
-                    with open(mod_path, 'r', encoding='utf-8') as f:
-                        modified_typetree = json.load(f)
+    return on_progress
 
-                    if modified_typetree:
-                        obj.save_typetree(modified_typetree)
-                        needs_saving = True
-                        dialogues_num += 1
-                        bundle_dialogues_count += 1
+on_progress = make_progress_callback()
 
-            if needs_saving:
-                out_bundle_path = os.path.join(out_dir, streaming_assets_path, bundle_name)
-                os.makedirs(os.path.dirname(out_bundle_path), exist_ok=True)
-                log(f"Writing file: {out_bundle_path} (imported {bundle_dialogues_count} dialogue databases)")
-                with open(out_bundle_path, "wb") as f:
-                    f.write(env.file.save(packer="original"))
-                bundles_num += 1
-        except Exception as e:
-            log(f"Error processing dialogue bundle {bundle_name}: {str(e)}")
-            log(traceback.format_exc())
+# Validate required flags
+if not IMPORT_MAIN:
+    log("IMPORT_MAIN is disabled")
+if not IMPORT_STRINGS:
+    log("IMPORT_STRINGS is disabled")
+if not IMPORT_DIALOGUES:
+    log("IMPORT_DIALOGUES is disabled")
+if not IMPORT_TEXTURES:
+    log("IMPORT_TEXTURES is disabled")
 
-if IMPORT_TEXTURES:
-    if overrides_dir:
-        for bundle_name in tqdm_wrap(iterable=texture_bundles, desc='Importing textures:'):
-            needs_saving = False
-            file_path = os.path.join(bundle_dir, bundle_name)
-            log(f"Reading file: {file_path}")
-            try:
-                env = UnityPy.load(file_path)
-                bundle_textures_count = 0
-                
-                for asset_path, obj in env.container.items():
-                    if obj.type.name in ['Texture2D','Sprite']:
-                        if asset_path in textures:
-                            data = obj.read()
-                            if not asset_path.endswith('.png'):
-                                asset_path += '.png'
-                            override = os.path.join(overrides_dir, os.path.basename(asset_path))
-                            if os.path.exists(override):
-                                log(f"Found texture override: {override} for {asset_path}")
-                                img = Image.open(override)
-                                if obj.type.name == 'Sprite':
-                                    # Get the original texture associated with this Sprite
-                                    data = data.m_RD.texture.read()
-                                data.image = img
-                                data.save()
-                                needs_saving = True
-                                textures_num += 1
-                                bundle_textures_count += 1
+try:
+    patcher = ResourcePatcher(
+        game_data_dir=data_dir,
+        res_dir=res_dir,
+        out_dir=out_dir,
+        overrides_dir=overrides_dir if IMPORT_TEXTURES else None,
+        unity_version=os.getenv('GAME_UNITY_VERSION'),
+        skip_textures=not IMPORT_TEXTURES,
+        use_python_parser=(os.getenv('UNITYPY_USE_PYTHON_PARSER') == 'true'),
+        typetree_path=typetree_path,
+        textures_list_path=textures_list_path,
+        log_fn=log,
+        on_progress=on_progress,
+    )
 
-                if needs_saving:
-                    out_bundle_path = os.path.join(out_dir, streaming_assets_path, bundle_name)
-                    os.makedirs(os.path.dirname(out_bundle_path), exist_ok=True)
-                    log(f"Writing file: {out_bundle_path} (imported {bundle_textures_count} textures)")
-                    with open(out_bundle_path, "wb") as f:
-                        f.write(env.file.save(packer="original"))
-                    bundles_num += 1
-            except Exception as e:
-                log(f"Error processing texture bundle {bundle_name}: {str(e)}")
-                log(traceback.format_exc())
+    # Honour the IMPORT_* debug flags by monkey-patching the patcher
+    if not IMPORT_MAIN:
+        patcher._import_i2languages = lambda: None
+    if not IMPORT_STRINGS:
+        patcher._import_strings = lambda: None
+    if not IMPORT_DIALOGUES:
+        patcher._import_dialogues = lambda: None
+    if not IMPORT_TEXTURES:
+        patcher._import_textures = lambda: None
+
+    summary = patcher.run()
+    strings_num   = summary['strings']
+    textures_num  = summary['textures']
+    dialogues_num = summary['dialogues']
+    bundles_num   = summary['bundles']
+
+except FileNotFoundError as e:
+    print(str(e))
+    log(str(e))
+    sys.exit(1)
+except RuntimeError as e:
+    print(str(e))
+    log(str(e))
+    sys.exit(1)
+except Exception as e:
+    log(f"Unexpected error: {str(e)}")
+    log(traceback.format_exc())
+    print(f"Unexpected error: {str(e)}")
+    sys.exit(1)
 
 post_cmd = os.getenv('POST_CMD')
 if post_cmd:
-    # Set working directory to two directories up from this script's directory just in case
     work_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
     os.chdir(work_dir)
     print('Running post-processing...')
-    import subprocess
     if os.name == 'nt':
         result = subprocess.run(post_cmd, shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.PIPE, text=True)
     else:
@@ -323,7 +321,7 @@ if post_cmd:
     if result.stderr:
         log(result.stderr)
 
-summary = f"""
+summary_text = f"""
 [SUMMARY]
 Imported I2Languages: 1
 Imported strings: {strings_num}
@@ -332,5 +330,5 @@ Imported dialogue databases: {dialogues_num}
 Bundles created: {bundles_num}
 """
 print()
-print(summary.strip())
-log(summary)
+print(summary_text.strip())
+log(summary_text)
