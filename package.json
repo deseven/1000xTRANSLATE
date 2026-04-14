@@ -1,6 +1,6 @@
 {
   "name": "1000xtranslate",
-  "version": "1.0.0",
+  "version": "26.4.0",
   "description": "A collection of tools to translate 1000xRESIST into your language",
   "main": "index.js",
   "scripts": {

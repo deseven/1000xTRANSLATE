@@ -62,17 +62,17 @@ log(f"  RES_DIR: {res_dir}")
 log(f"  OVERRIDES_DIR: {overrides_dir}")
 log(f"  OUT_DIR: {out_dir}")
 log(f"  UNITYPY_USE_PYTHON_PARSER: {os.getenv('UNITYPY_USE_PYTHON_PARSER')}")
-log(f"  BBB_CREATE_PATCHER: {os.getenv('BBB_CREATE_PATCHER')}")
+log(f"  CREATE_PATCHER: {os.getenv('CREATE_PATCHER')}")
 
 typetree_path      = os.path.join(os.path.dirname(__file__), '../', '../', 'Data', 'I2.loc.typetree.json')
 textures_list_path = os.path.join(os.path.dirname(__file__), '../', '../', 'Data', 'textures.list')
 
 # ===========================================================================
-# BBB_CREATE_PATCHER mode - build a standalone patcher executable
+# CREATE_PATCHER mode - build a standalone patcher executable
 # ===========================================================================
 
-if os.getenv('BBB_CREATE_PATCHER', '').lower() == 'true':
-    log("BBB_CREATE_PATCHER is enabled - building patcher executable")
+if os.getenv('CREATE_PATCHER', '').lower() == 'true':
+    log("CREATE_PATCHER is enabled - building patcher executable")
     print("Building patcher executable...")
 
     script_dir = os.path.dirname(os.path.abspath(__file__))
@@ -263,6 +263,14 @@ if not IMPORT_DIALOGUES:
     log("IMPORT_DIALOGUES is disabled")
 if not IMPORT_TEXTURES:
     log("IMPORT_TEXTURES is disabled")
+
+# Clean the output directory before writing
+abs_out_dir = os.path.abspath(out_dir) if out_dir else ''
+if abs_out_dir and os.path.exists(abs_out_dir):
+    log(f"Cleaning output directory: {abs_out_dir}")
+    print("Cleaning output directory...")
+    shutil.rmtree(abs_out_dir)
+os.makedirs(abs_out_dir, exist_ok=True)
 
 try:
     patcher = ResourcePatcher(

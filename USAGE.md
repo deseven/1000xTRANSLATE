@@ -40,6 +40,21 @@ Run `npm run build`. It's an alias for the following two commands:
 Again, you can run them individually if needed. The result would be the changed game files in your `OUT_DIR`, ready to be put into the game or distributed.
 
 
+### Creating a standalone patcher
+By default, BBB outputs patched game bundle files — these are large, tied to a specific game version, and distributing them may be legally questionable. As an alternative, you can set `CREATE_PATCHER=true` in your `.env` to produce a **standalone patcher** instead.
+
+In this mode, BBB builds a self-contained executable and packages it together with only the modified resources (JSON patches and texture overrides). End users then run the patcher against their own copy of the game, so no actual game files are ever distributed.
+
+> [!NOTE]
+> The patcher can only be built for the platform you are currently running on. Cross-platform builds are not supported.
+
+The patcher could be run like this:
+```
+patcher <game_directory>
+```
+where `<game_directory>` is the root folder of the 1000xRESIST installation (the folder that contains the `1000xRESIST_Data` sub-folder). The patcher applies all changes directly into the game directory in-place. Ideally, you would also build an installation package (using [NSIS](https://nsis.sourceforge.io/) for example) that would automate all of that for the end users.
+
+
 ## Maintenance
 Use `npm run clean` to clean exported and parsed resources.
 

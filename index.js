@@ -5,6 +5,10 @@ import { dirname } from 'path';
 import dotenv from 'dotenv';
 import chalk from 'chalk';
 import { execSync } from 'child_process';
+import { createRequire } from 'module';
+
+const require = createRequire(import.meta.url);
+const { version } = require('./package.json');
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -63,7 +67,7 @@ const variables = {
     GAME_UNITY_VERSION: {
         required_by: ['function:1-exporter', 'function:6-boom-boom-build']
     },
-    BBB_CREATE_PATCHER: {
+    CREATE_PATCHER: {
         required_by: [],
         check: 'equalsTrueOrFalse',
         message: "does not equal to 'true' or 'false'"
@@ -518,6 +522,9 @@ function run(dir, extraArgs = []) {
 }
 
 async function main() {
+    console.log(chalk.bold(`1000xTRANSLATE v${version}`));
+    console.log();
+
     const [command, subCommand] = (process.argv[2] || '').split(':');
     const args = process.argv.slice(3);
 
