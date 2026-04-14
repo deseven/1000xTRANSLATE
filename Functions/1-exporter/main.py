@@ -135,20 +135,17 @@ if EXPORT_STRINGS:
 
             for obj in env.objects:
                 if obj.type.name == 'MonoBehaviour':
-                    if obj.serialized_type.node:
-                        try:
-                            data = obj.read()
-                            tree = obj.read_typetree()
-                            if 'm_Script' in tree:
-                                try:
-                                    script = data.m_Script.read()
-                                    if script.m_ClassName == 'TextMeshPro' and 'm_text' in tree:
-                                        strings[tree['m_text'].replace('\t', '\\t').replace('\n', '\\n')] = ""
-                                except:
-                                    continue
-                        except Exception as inner_e:
-                            log(f"Error processing object in {bundle_name}: {str(inner_e)}")
-                            continue
+                    if not obj.serialized_type.nodes:
+                        continue
+                    try:
+                        tree = obj.read_typetree()
+                        # Detect world-space TextMeshPro by structure (script pointer may be cross-bundle)
+                        # World-space TMP has _SortingLayer/_SortingOrder fields; TextMeshProUGUI does not
+                        if 'm_text' in tree and 'm_fontAsset' in tree and '_SortingLayer' in tree:
+                            strings[tree['m_text'].replace('\t', '\\t').replace('\n', '\\n')] = ""
+                    except Exception as inner_e:
+                        log(f"Error processing object in {bundle_name}: {str(inner_e)}")
+                        continue
         except Exception as e:
             log(f"ERROR processing bundle {bundle_name}: {str(e)}")
             log(traceback.format_exc())
@@ -168,37 +165,52 @@ if EXPORT_DIALOGUES:
             env = UnityPy.load(file_path)
             bundle_dest = os.path.join(res_dir, os.path.basename(bundle_name))
 
+            # Build a path_id -> asset_path lookup from the container
+            pathid_to_asset = {}
             for asset_path, obj in env.container.items():
+                pathid_to_asset[obj.path_id] = asset_path
+
+            for obj in env.objects:
+                if obj.type.name != 'MonoBehaviour':
+                    continue
+                # Only process objects with an embedded typetree
+                if not obj.serialized_type.nodes:
+                    continue
+                try:
+                    typetree = obj.read_typetree()
+                except Exception as e:
+                    log(f"Warning: failed to read typetree in {bundle_name}: {str(e)}")
+                    continue
+
+                # Detect DialogueDatabase by structure (script pointer is cross-bundle)
+                if not ('conversations' in typetree and 'actors' in typetree and 'items' in typetree):
+                    continue
+
+                asset_path = pathid_to_asset.get(obj.path_id, '')
+
                 if 'DialogueDatabaseArchive' in asset_path: # skip archived convos
                     continue
-                if obj.type.name == 'MonoBehaviour':
-                    try:
-                        data = obj.read()
-                        script = data.m_Script.read()
-                    except:
-                        continue
 
-                    if script.m_ClassName == 'DialogueDatabase':
-                        # check for typetree availability
-                        if not data.object_reader.serialized_type.nodes:
-                            continue
+                json_data = json.dumps(typetree, indent=2, ensure_ascii=False)
 
-                        typetree = data.object_reader.read_typetree()
-                        json_data = json.dumps(typetree, indent=2, ensure_ascii=False)
+                # build destination path
+                if asset_path:
+                    asset_dir = os.path.join(bundle_dest, os.path.dirname(asset_path))
+                    filename = os.path.basename(asset_path) + ".json"
+                else:
+                    # fallback: use m_Name
+                    m_name = typetree.get('m_Name', f'dialogue_{obj.path_id}')
+                    asset_dir = bundle_dest
+                    filename = m_name + ".json"
 
-                        # build destination path
-                        name = getattr(data, 'm_Name', 'MonoBehaviour')
-                        asset_dir = os.path.join(bundle_dest, os.path.dirname(asset_path))
-                        filename = os.path.basename(asset_path) + ".json"
+                os.makedirs(asset_dir, exist_ok=True)
+                output_path = os.path.join(asset_dir, filename)
+                log(f"Writing dialogue: {output_path}")
 
-                        os.makedirs(asset_dir, exist_ok=True)
-                        output_path = os.path.join(asset_dir, filename)
-                        log(f"Writing dialogue: {output_path}")
+                with open(output_path, 'w', encoding='utf-8') as f:
+                    f.write(json_data)
 
-                        with open(output_path, 'w', encoding='utf-8') as f:
-                            f.write(json_data)
-                        
-                        dialogues_num += 1
+                dialogues_num += 1
         except Exception as e:
             log(f"ERROR processing dialogue bundle {bundle_name}: {str(e)}")
             log(traceback.format_exc())

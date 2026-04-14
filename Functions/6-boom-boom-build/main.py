@@ -172,22 +172,23 @@ if IMPORT_STRINGS:
             
             for obj in env.objects:
                 if obj.type.name == 'MonoBehaviour':
-                    if obj.serialized_type.node:
-                        data = obj.read()
+                    if not obj.serialized_type.nodes:
+                        continue
+                    try:
                         tree = obj.read_typetree()
-                        if 'm_Script' in tree:
-                            try:
-                                script = data.m_Script.read()
-                            except:
-                                continue
-                            if script.m_ClassName == 'TextMeshPro' and 'm_text' in tree:
-                                strings_key = tree['m_text'].replace('\t', '\\t').replace('\n', '\\n')
-                                if strings_key in strings and strings[strings_key] != "":
-                                    tree['m_text'] = strings[strings_key].replace('\\t', '\t').replace('\\n', '\n')
-                                    obj.save_typetree(tree)
-                                    needs_saving = True
-                                    strings_num += 1
-                                    bundle_strings_count += 1
+                    except Exception as inner_e:
+                        log(f"Error processing object in {bundle_name}: {str(inner_e)}")
+                        continue
+                    # Detect world-space TextMeshPro by structure (script pointer may be cross-bundle)
+                    # World-space TMP has _SortingLayer/_SortingOrder fields; TextMeshProUGUI does not
+                    if 'm_text' in tree and 'm_fontAsset' in tree and '_SortingLayer' in tree:
+                        strings_key = tree['m_text'].replace('\t', '\\t').replace('\n', '\\n')
+                        if strings_key in strings and strings[strings_key] != "":
+                            tree['m_text'] = strings[strings_key].replace('\\t', '\t').replace('\\n', '\n')
+                            obj.save_typetree(tree)
+                            needs_saving = True
+                            strings_num += 1
+                            bundle_strings_count += 1
             
             if needs_saving:
                 out_bundle_path = os.path.join(out_dir, streaming_assets_path, bundle_name)
@@ -208,43 +209,54 @@ if IMPORT_DIALOGUES:
         try:
             env = UnityPy.load(file_path)
             bundle_dialogues_count = 0
-            
+
+            # Build a path_id -> asset_path lookup from the container
+            pathid_to_asset = {}
             for asset_path, obj in env.container.items():
+                pathid_to_asset[obj.path_id] = asset_path
+
+            for obj in env.objects:
+                if obj.type.name != 'MonoBehaviour':
+                    continue
+                # Only process objects with an embedded typetree
+                if not obj.serialized_type.nodes:
+                    continue
+                try:
+                    typetree = obj.read_typetree()
+                except Exception as e:
+                    log(f"Warning: failed to read typetree in {bundle_name}: {str(e)}")
+                    continue
+
+                # Detect DialogueDatabase by structure (script pointer is cross-bundle)
+                if not ('conversations' in typetree and 'actors' in typetree and 'items' in typetree):
+                    continue
+
+                asset_path = pathid_to_asset.get(obj.path_id, '')
+
                 if 'DialogueDatabaseArchive' in asset_path: # skip archived convos
                     continue
-                if obj.type.name == 'MonoBehaviour':
-                    try:
-                        data = obj.read()
-                        script = data.m_Script.read()
-                    except:
-                        continue
 
-                    if script.m_ClassName == 'DialogueDatabase':
-                        # check for typetree availability
-                        if not data.object_reader.serialized_type.nodes:
-                            continue
+                # build mod file path
+                bundle_dest = os.path.join(res_dir, os.path.basename(bundle_name))
+                if asset_path:
+                    asset_dir = os.path.join(bundle_dest, os.path.dirname(asset_path))
+                    filename = os.path.basename(asset_path) + "-mod.json"
+                else:
+                    m_name = typetree.get('m_Name', f'dialogue_{obj.path_id}')
+                    asset_dir = bundle_dest
+                    filename = m_name + "-mod.json"
+                mod_path = os.path.join(asset_dir, filename)
 
-                        typetree = data.object_reader.read_typetree()
-                        json_data = json.dumps(typetree, indent=4, ensure_ascii=False)
+                if os.path.exists(mod_path) and os.path.getsize(mod_path) > 0:
+                    log(f"Found modified dialogue: {mod_path} for {asset_path or '(no container path)'}")
+                    with open(mod_path, 'r', encoding='utf-8') as f:
+                        modified_typetree = json.load(f)
 
-                        # build destination path
-                        name = getattr(data, 'm_Name', 'MonoBehaviour')
-                        bundle_dest = os.path.join(res_dir, os.path.basename(bundle_name))
-                        asset_dir = os.path.join(bundle_dest, os.path.dirname(asset_path))
-                        filename = os.path.basename(asset_path) + "-mod.json"
-                        typetree_path = os.path.join(asset_dir, filename)
-
-                        if os.path.exists(typetree_path) and os.path.getsize(typetree_path) > 0:
-                            log(f"Found modified dialogue: {typetree_path} for {asset_path}")
-                            with open(typetree_path, 'r', encoding='utf-8') as f:
-                                typetree = json.load(f)
-                            
-                            if typetree:
-                                objd = obj.deref()
-                                objd.save_typetree(typetree)
-                                needs_saving = True
-                                dialogues_num += 1
-                                bundle_dialogues_count += 1
+                    if modified_typetree:
+                        obj.save_typetree(modified_typetree)
+                        needs_saving = True
+                        dialogues_num += 1
+                        bundle_dialogues_count += 1
 
             if needs_saving:
                 out_bundle_path = os.path.join(out_dir, streaming_assets_path, bundle_name)
