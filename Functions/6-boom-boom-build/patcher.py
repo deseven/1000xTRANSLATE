@@ -2,9 +2,30 @@ import gc
 import os
 import json
 import shutil
+import tempfile
 import traceback
 import UnityPy
 from PIL import Image
+
+
+def _write_atomic(path, data):
+    """Write data to a temp file in the same directory, then replace the target.
+
+    This avoids the read-then-write-to-same-file corruption that occurs when
+    UnityPy holds a lazy file handle open while we overwrite the source path.
+    """
+    dir_ = os.path.dirname(path)
+    fd, tmp_path = tempfile.mkstemp(dir=dir_)
+    try:
+        with os.fdopen(fd, 'wb') as f:
+            f.write(data)
+        os.replace(tmp_path, path)
+    except Exception:
+        try:
+            os.unlink(tmp_path)
+        except OSError:
+            pass
+        raise
 
 
 class ResourcePatcher:
@@ -164,8 +185,8 @@ class ResourcePatcher:
                         os.makedirs(self.out_dir, exist_ok=True)
                         out_path = os.path.join(self.out_dir, 'resources.assets')
                         self.log(f"Writing file: {out_path}")
-                        with open(out_path, "wb") as f:
-                            f.write(env.file.save(packer="original"))
+                        data_bytes = env.file.save(packer="original")
+                        _write_atomic(out_path, data_bytes)
                         self.on_progress('i2languages', 1, 1)
                         self.log("I2Languages successfully imported")
                         break
@@ -215,8 +236,7 @@ class ResourcePatcher:
                     out_bundle_path = os.path.join(self.out_dir, self.STREAMING_ASSETS_PATH, bundle_name)
                     os.makedirs(os.path.dirname(out_bundle_path), exist_ok=True)
                     self.log(f"Writing file: {out_bundle_path} (imported {bundle_strings_count} strings)")
-                    with open(out_bundle_path, "wb") as f:
-                        f.write(env.file.save(packer="original"))
+                    _write_atomic(out_bundle_path, env.file.save(packer="original"))
                     self.bundles_num += 1
             except Exception as e:
                 self.log(f"Error processing bundle {bundle_name}: {str(e)}")
@@ -285,8 +305,7 @@ class ResourcePatcher:
                     out_bundle_path = os.path.join(self.out_dir, self.STREAMING_ASSETS_PATH, bundle_name)
                     os.makedirs(os.path.dirname(out_bundle_path), exist_ok=True)
                     self.log(f"Writing file: {out_bundle_path} (imported {bundle_dialogues_count} dialogue databases)")
-                    with open(out_bundle_path, "wb") as f:
-                        f.write(env.file.save(packer="original"))
+                    _write_atomic(out_bundle_path, env.file.save(packer="original"))
                     self.bundles_num += 1
             except Exception as e:
                 self.log(f"Error processing dialogue bundle {bundle_name}: {str(e)}")
@@ -337,8 +356,7 @@ class ResourcePatcher:
                     out_bundle_path = os.path.join(self.out_dir, self.STREAMING_ASSETS_PATH, bundle_name)
                     os.makedirs(os.path.dirname(out_bundle_path), exist_ok=True)
                     self.log(f"Writing file: {out_bundle_path} (imported {bundle_textures_count} textures)")
-                    with open(out_bundle_path, "wb") as f:
-                        f.write(env.file.save(packer="original"))
+                    _write_atomic(out_bundle_path, env.file.save(packer="original"))
                     self.bundles_num += 1
             except Exception as e:
                 self.log(f"Error processing texture bundle {bundle_name}: {str(e)}")
