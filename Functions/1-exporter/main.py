@@ -67,9 +67,12 @@ def detect_unity_version(game_data_dir):
     return None
 
 unity_version = detect_unity_version(data_dir)
-if unity_version:
-    UnityPy.config.FALLBACK_UNITY_VERSION = unity_version
+if not unity_version or not unity_version.startswith('6000'):
+    print(f"Error: this game version is not supported (detected: {unity_version})")
+    log(f"ERROR: unsupported Unity version: {unity_version}")
+    exit(1)
 
+UnityPy.config.FALLBACK_UNITY_VERSION = unity_version
 log(f"Unity version detected: {unity_version}")
 
 strings_num = 0

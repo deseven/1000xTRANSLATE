@@ -78,8 +78,9 @@ class ResourcePatcher:
         # Configure UnityPy - auto-detect version from resources.assets if not provided
         if not unity_version:
             unity_version = detect_unity_version(game_data_dir)
-        if unity_version:
-            UnityPy.config.FALLBACK_UNITY_VERSION = unity_version
+        if not unity_version or not unity_version.startswith('6000'):
+            raise RuntimeError(f"Error: this game version is not supported (detected: {unity_version})")
+        UnityPy.config.FALLBACK_UNITY_VERSION = unity_version
         self.log(f"Unity version: {unity_version}")
 
         import warnings
