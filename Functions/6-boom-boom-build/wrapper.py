@@ -74,12 +74,6 @@ def main():
     typetree_path      = os.path.join(_base_dir, 'data', 'I2.loc.typetree.json')
     textures_list_path = os.path.join(_base_dir, 'data', 'textures.list')
 
-    unity_version_path = os.path.join(_base_dir, 'data', 'unity_version.txt')
-    unity_version = None
-    if os.path.exists(unity_version_path):
-        with open(unity_version_path, 'r', encoding='utf-8') as f:
-            unity_version = f.read().strip()
-
     skip_textures = not os.path.isdir(overrides_dir)
 
     print(f"Game directory : {game_dir}")
@@ -96,7 +90,6 @@ def main():
             res_dir=res_dir,
             out_dir=game_dir,
             overrides_dir=None if skip_textures else overrides_dir,
-            unity_version=unity_version,
             skip_textures=skip_textures,
             typetree_path=typetree_path,
             textures_list_path=textures_list_path,

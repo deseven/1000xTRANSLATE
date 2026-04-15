@@ -36,13 +36,10 @@ load_dotenv('../../.env')
 if os.getenv('SKIP_TEXTURES', '').lower() == 'true':
     EXPORT_TEXTURES = False
     log("SKIP_TEXTURES is enabled - texture export disabled")
-UnityPy.config.FALLBACK_UNITY_VERSION = os.getenv('GAME_UNITY_VERSION')
 
 # Suppress UnityVersionFallbackWarning since we're explicitly setting the fallback version
 import warnings
 warnings.filterwarnings("ignore", category=UnityPy.config.UnityVersionFallbackWarning)
-
-log(f"Environment loaded - Unity Version: {os.getenv('GAME_UNITY_VERSION')}")
 
 # Handle both relative and absolute paths
 def get_path(env_var):
@@ -56,6 +53,24 @@ res_dir = get_path('RES_DIR')
 textures_dir = get_path('TEXTURES_DIR')
 
 log(f"Paths configured - Data: {data_dir}, Resources: {res_dir}, Textures: {textures_dir}")
+
+# Auto-detect Unity version from resources.assets
+def detect_unity_version(game_data_dir):
+    try:
+        resources_path = os.path.join(game_data_dir, 'resources.assets')
+        env = UnityPy.load(resources_path)
+        for sf in env.files.values():
+            if hasattr(sf, 'unity_version') and sf.unity_version:
+                return sf.unity_version
+    except Exception:
+        pass
+    return None
+
+unity_version = detect_unity_version(data_dir)
+if unity_version:
+    UnityPy.config.FALLBACK_UNITY_VERSION = unity_version
+
+log(f"Unity version detected: {unity_version}")
 
 strings_num = 0
 textures_num = 0

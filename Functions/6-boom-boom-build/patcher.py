@@ -20,6 +20,19 @@ def _load_env(file_path):
     return UnityPy.load(io.BytesIO(data))
 
 
+def detect_unity_version(game_data_dir):
+    """Detect the Unity version by reading resources.assets from the game data directory."""
+    try:
+        resources_path = os.path.join(game_data_dir, 'resources.assets')
+        env = UnityPy.load(resources_path)
+        for sf in env.files.values():
+            if hasattr(sf, 'unity_version') and sf.unity_version:
+                return sf.unity_version
+    except Exception:
+        pass
+    return None
+
+
 class ResourcePatcher:
     """
     Handles all resource patching for 1000xRESIST.
@@ -62,9 +75,12 @@ class ResourcePatcher:
         self.log = log_fn if log_fn else lambda msg: None
         self.on_progress = on_progress if on_progress else lambda stage, cur, tot: None
 
-        # Configure UnityPy
+        # Configure UnityPy - auto-detect version from resources.assets if not provided
+        if not unity_version:
+            unity_version = detect_unity_version(game_data_dir)
         if unity_version:
             UnityPy.config.FALLBACK_UNITY_VERSION = unity_version
+        self.log(f"Unity version: {unity_version}")
 
         import warnings
         warnings.filterwarnings("ignore", category=UnityPy.config.UnityVersionFallbackWarning)

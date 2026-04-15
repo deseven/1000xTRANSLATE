@@ -56,7 +56,6 @@ overrides_dir = get_path('OVERRIDES_DIR')
 out_dir       = get_path('OUT_DIR')
 
 log(f"Environment configuration:")
-log(f"  GAME_UNITY_VERSION: {os.getenv('GAME_UNITY_VERSION')}")
 log(f"  GAME_DATA_DIR: {data_dir}")
 log(f"  RES_DIR: {res_dir}")
 log(f"  OVERRIDES_DIR: {overrides_dir}")
@@ -103,13 +102,6 @@ if os.getenv('CREATE_PATCHER', '').lower() == 'true':
     shutil.copy2(typetree_path, os.path.join(patcher_data_dir, 'I2.loc.typetree.json'))
     shutil.copy2(textures_list_path, os.path.join(patcher_data_dir, 'textures.list'))
     log(f"Copied data files to {patcher_data_dir}")
-
-    # Write unity version hint
-    unity_version = os.getenv('GAME_UNITY_VERSION', '')
-    if unity_version:
-        with open(os.path.join(patcher_data_dir, 'unity_version.txt'), 'w', encoding='utf-8') as f:
-            f.write(unity_version)
-        log(f"Wrote unity_version.txt: {unity_version}")
 
     # Copy only *-mod.json files from res_dir (preserving subdirectory structure)
     patcher_res_dir = os.path.join(abs_out_dir, 'resources')
@@ -278,7 +270,6 @@ try:
         res_dir=res_dir,
         out_dir=out_dir,
         overrides_dir=overrides_dir if IMPORT_TEXTURES else None,
-        unity_version=os.getenv('GAME_UNITY_VERSION'),
         skip_textures=not IMPORT_TEXTURES,
         use_python_parser=(os.getenv('UNITYPY_USE_PYTHON_PARSER') == 'true'),
         typetree_path=typetree_path,

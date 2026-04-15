@@ -65,7 +65,8 @@ const variables = {
         message: 'directory does not exist or is empty'
     },
     GAME_UNITY_VERSION: {
-        required_by: ['function:1-exporter', 'function:6-boom-boom-build']
+        required_by: [],
+        deprecated: true
     },
     CREATE_PATCHER: {
         required_by: [],
@@ -236,6 +237,15 @@ async function checkEnvironment(requiredFor = null) {
         const requiredInfo = (config.required_by && config.required_by.length > 0) ? ` [Required by: ${config.required_by.join(', ')}]` : '';
         const errorMessage = config.message || (config.check ? 'failed validation check.' : 'is not set or is empty.');
         const isOptional = !config.required_by || config.required_by.length === 0;
+
+        if (config.deprecated) {
+            if (value) {
+                console.log(chalk.yellow('[DEPRECATED]'), `${varName} is no longer used and can be removed from your .env file.`);
+            } else {
+                console.log(chalk.blue('[SKIPPED]'), `${varName} is deprecated and not set.`);
+            }
+            return true;
+        }
 
         if (!value) {
             if (isOptional) {
