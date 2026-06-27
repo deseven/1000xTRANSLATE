@@ -122,19 +122,19 @@ if os.getenv('CREATE_PATCHER', '').lower() == 'true':
         log(f"Warning: RES_DIR '{res_dir}' does not exist, skipping resource copy")
         print(f"Warning: RES_DIR '{res_dir}' does not exist, skipping resource copy")
 
-    # Copy only PNG files from overrides dir
+    # Copy PNG (texture) and TTF/OTF (font) overrides from overrides dir
     if overrides_dir and os.path.isdir(overrides_dir):
         patcher_overrides_dir = os.path.join(abs_out_dir, 'overrides')
         os.makedirs(patcher_overrides_dir, exist_ok=True)
         copied_overrides = 0
         for filename in os.listdir(overrides_dir):
-            if filename.lower().endswith('.png'):
+            if filename.lower().endswith(('.png', '.ttf', '.otf')):
                 src = os.path.join(overrides_dir, filename)
                 if os.path.isfile(src):
                     shutil.copy2(src, os.path.join(patcher_overrides_dir, filename))
                     copied_overrides += 1
-        log(f"Copied {copied_overrides} PNG overrides from {overrides_dir} to {patcher_overrides_dir}")
-        print(f"Copied {copied_overrides} texture overrides to: {patcher_overrides_dir}")
+        log(f"Copied {copied_overrides} overrides from {overrides_dir} to {patcher_overrides_dir}")
+        print(f"Copied {copied_overrides} overrides to: {patcher_overrides_dir}")
 
     # PyInstaller can only build for the current platform.
     # The executable is placed directly in abs_out_dir alongside data/, resources/, overrides/.
@@ -206,6 +206,7 @@ strings_num   = 0
 textures_num  = 0
 dialogues_num = 0
 bundles_num   = 0
+fonts_num     = 0
 
 # tqdm progress -> drive tqdm bars
 def make_progress_callback():
@@ -269,7 +270,7 @@ try:
         game_data_dir=data_dir,
         res_dir=res_dir,
         out_dir=out_dir,
-        overrides_dir=overrides_dir if IMPORT_TEXTURES else None,
+        overrides_dir=overrides_dir,
         skip_textures=not IMPORT_TEXTURES,
         use_python_parser=(os.getenv('UNITYPY_USE_PYTHON_PARSER') == 'true'),
         typetree_path=typetree_path,
@@ -293,6 +294,7 @@ try:
     textures_num  = summary['textures']
     dialogues_num = summary['dialogues']
     bundles_num   = summary['bundles']
+    fonts_num     = summary['fonts']
 
 except FileNotFoundError as e:
     print(str(e))
@@ -327,6 +329,7 @@ Imported strings: {strings_num}
 Imported textures: {textures_num}
 Imported dialogue databases: {dialogues_num}
 Bundles created: {bundles_num}
+Imported fonts: {fonts_num}
 """
 print()
 print(summary_text.strip())

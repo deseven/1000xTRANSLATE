@@ -20,9 +20,8 @@ The toolset is intended to be used in the following way:
 ## Roadmap
  - ~~be able to export, parse, translate and import all visible text data~~
  - ~~translator/checker~~
- - fonts patching
+ - ~~texture and font overrides~~
  - ~~general polishing & documentation~~
- - ~~texture~~ and other resources overrides (?)
 
 
 ## Functions

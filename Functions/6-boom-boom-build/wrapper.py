@@ -74,14 +74,18 @@ def main():
     typetree_path      = os.path.join(_base_dir, 'data', 'I2.loc.typetree.json')
     textures_list_path = os.path.join(_base_dir, 'data', 'textures.list')
 
-    skip_textures = not os.path.isdir(overrides_dir)
+    has_overrides = os.path.isdir(overrides_dir)
+    # Textures are skipped only when there are no overrides at all; fonts and
+    # textures share the same overrides directory, so as long as it exists we
+    # pass it through (texture import itself is gated by skip_textures).
+    skip_textures = not has_overrides
 
     print(f"Game directory : {game_dir}")
     print(f"Resources      : {res_dir}")
-    if skip_textures:
-        print("Textures       : skipped (no 'overrides' folder found)")
+    if has_overrides:
+        print(f"Overrides      : {overrides_dir}")
     else:
-        print(f"Textures       : {overrides_dir}")
+        print("Overrides      : skipped (no 'overrides' folder found)")
     print()
 
     try:
@@ -89,7 +93,7 @@ def main():
             game_data_dir=game_data_dir,
             res_dir=res_dir,
             out_dir=game_dir,
-            overrides_dir=None if skip_textures else overrides_dir,
+            overrides_dir=overrides_dir if has_overrides else None,
             skip_textures=skip_textures,
             typetree_path=typetree_path,
             textures_list_path=textures_list_path,
@@ -114,7 +118,8 @@ def main():
         f"Imported strings:            {summary['strings']}\n"
         f"Imported textures:           {summary['textures']}\n"
         f"Imported dialogue databases: {summary['dialogues']}\n"
-        f"Bundles patched:             {summary['bundles']}"
+        f"Bundles patched:             {summary['bundles']}\n"
+        f"Imported fonts:              {summary['fonts']}"
     )
 
 

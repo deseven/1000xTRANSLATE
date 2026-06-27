@@ -32,6 +32,32 @@ Also see **LLM usage notes** below.
 After running the Exporter, you see the textures appear in your `TEXTURES_DIR`, you can pick any of these and copy them to your `OVERRIDES_DIR` for editing. Overrided textures should have the same format and dimensions as the original ones.
 
 
+## Overriding the fonts
+The game ships 13 fonts. You can replace any of them with your own font file by placing it in your `OVERRIDES_DIR`.
+
+The override file's base name (without extension) must **exactly match** the name of the target `Font` object, and the extension must be either `.ttf` or `.otf`.
+
+The available font names are:
+
+| Name | Format |
+|----------|--------|
+| `NotoSansJP-Thin` | TTF |
+| `NotoSansKR-Thin` | TTF |
+| `NotoSansHK-Thin` | OTF |
+| `NotoSansHK-Regular` | OTF |
+| `NotoSansSC-Thin` | TTF |
+| `Jura-Regular` | TTF |
+| `Jura-Light` | TTF |
+| `Jura-Medium` | TTF |
+| `Rajdhani-Medium` | TTF |
+| `Rajdhani-Regular` | TTF |
+| `LiberationSans` | TTF |
+| `PerfectDOSVGA437` | TTF |
+| `PC-Filled` | TTF |
+
+For example, to replace the font `Jura-Regular` with your own TTF, place a file named `Jura-Regular.ttf` in your `OVERRIDES_DIR`.
+
+
 ## Building the translation
 Run `npm run build`. It's an alias for the following two commands:
  - `npm run function:desheetifier` to pull the strings from the spreadsheet and inject them into game resources

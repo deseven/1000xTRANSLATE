@@ -12,6 +12,8 @@ node_modules/
 *.htm
 *.afphoto
 *.psd
+*.ttf
+*.otf
 *.*lock*
 .env
 .venv

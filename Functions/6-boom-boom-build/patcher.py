@@ -121,6 +121,7 @@ class ResourcePatcher:
         self.textures_num  = 0
         self.dialogues_num = 0
         self.bundles_num   = 0
+        self.fonts_num     = 0
 
     # ------------------------------------------------------------------
     # Public API
@@ -191,6 +192,9 @@ class ResourcePatcher:
                     if found:
                         obj.save_typetree(self._I2Languages,
                                           self._I2LocTypetree['I2.Loc.LanguageSourceAsset'])
+                        # Replace legacy Font objects with override TTF/OTF files
+                        # (shares the same env / single save pass as I2Languages)
+                        self._import_fonts(env)
                         os.makedirs(self.out_dir, exist_ok=True)
                         out_path = os.path.join(self.out_dir, 'resources.assets')
                         self.log(f"Writing file: {out_path}")
@@ -382,6 +386,55 @@ class ResourcePatcher:
                     gc.collect()
         self.on_progress('textures', total, total)
 
+    def _import_fonts(self, env):
+        """Replace m_FontData in legacy Font objects using override TTF/OTF files.
+
+        Looks for font files (``*.ttf`` / ``*.otf``) inside the overrides
+        directory. The file's base name (without extension) must match the
+        ``m_Name`` field of the target ``Font`` object in ``resources.assets``.
+        Runs inside the ``_import_i2languages`` pass so it shares the same env
+        and a single save pass.
+        """
+        if not self.overrides_dir or not os.path.isdir(self.overrides_dir):
+            return
+
+        # Build lookup: font_name -> file path (case-insensitive extension match)
+        override_files = {}
+        for filename in os.listdir(self.overrides_dir):
+            if filename.lower().endswith(('.ttf', '.otf')):
+                name = os.path.splitext(filename)[0]
+                override_files[name] = os.path.join(self.overrides_dir, filename)
+
+        if not override_files:
+            return
+
+        replaced = 0
+        for obj in env.objects:
+            if obj.type.name != 'Font':
+                continue
+            try:
+                data = obj.read()
+            except Exception as e:
+                self.log(f"Warning: failed to read Font object: {str(e)}")
+                continue
+            if data.m_Name in override_files:
+                override_path = override_files[data.m_Name]
+                try:
+                    with open(override_path, 'rb') as fh:
+                        new_bytes = fh.read()
+                except Exception as e:
+                    self.log(f"Warning: failed to read font override '{override_path}': {str(e)}")
+                    continue
+                tree = obj.read_typetree()
+                tree['m_FontData'] = list(new_bytes)
+                obj.save_typetree(tree)
+                self.log(f"Replaced font: {data.m_Name} ({len(new_bytes)} bytes) <- {override_path}")
+                replaced += 1
+
+        self.fonts_num += replaced
+        if replaced:
+            self.log(f"Replaced {replaced} font(s)")
+
     def _summary(self):
         return {
             'i2languages': 1,
@@ -389,4 +442,5 @@ class ResourcePatcher:
             'textures':    self.textures_num,
             'dialogues':   self.dialogues_num,
             'bundles':     self.bundles_num,
+            'fonts':       self.fonts_num,
         }
