@@ -10,12 +10,6 @@ const initspinner = nanospinner.createSpinner('Initializing...').start();
 dotenv.config({ path: '.env' });
 const resDir = path.isAbsolute(process.env.RES_DIR) ? process.env.RES_DIR : path.join(__dirname, '../../', process.env.RES_DIR);
 
-const lang_bind = {
-    en: 0,
-    zh: 1,
-    ja: 2
-};
-
 // Statistics
 let stats = {
     spreadsheet: {
@@ -126,7 +120,15 @@ async function main() {
         log(`Processing ${i2LanguagesFile}...`);
         if (fs.existsSync(i2LanguagesFile)) {
             const data = JSON.parse(fs.readFileSync(i2LanguagesFile, 'utf-8'));
-            const targetLangIndex = lang_bind[process.env.TARGET_LANG];
+            // Emit a flat patch map (term -> translation) instead of a full
+            // typetree snapshot. The patcher merges this into the original
+            // I2Languages asset extracted from the user's game at patch time.
+            const patch = {
+                format: 'i2languages-patch',
+                version: 1,
+                target_lang: process.env.TARGET_LANG,
+                terms: {}
+            };
 
             if (data.mSource?.mTerms?.length) {
                 data.mSource.mTerms.forEach(term => {
@@ -134,10 +136,7 @@ async function main() {
                     if (system[systemKey]) {
                         const translation = system[systemKey].translated;
                         if (translation) {
-                            if (!term.Languages) {
-                                term.Languages = [];
-                            }
-                            term.Languages[targetLangIndex] = translation.replace(/\\t/g, '\t');
+                            patch.terms[term.Term] = translation.replace(/\\t/g, '\t');
                             stats.replaced.system++;
                             unmatchedStrings.system.delete(systemKey);
                         } else {
@@ -148,7 +147,7 @@ async function main() {
                     }
                 });
             }
-            fs.writeFileSync(path.join(path.dirname(i2LanguagesFile), 'I2Languages-mod.json'), JSON.stringify(data, null, 2));
+            fs.writeFileSync(path.join(path.dirname(i2LanguagesFile), 'I2Languages-mod.json'), JSON.stringify(patch, null, 2));
         } else {
             spinner.error();
             console.error(`No ${i2LanguagesFile}, run Exporter first?`);
@@ -161,6 +160,18 @@ async function main() {
         for (const file of jsonFiles) {
             log(`Processing ${file}...`);
             const data = JSONbig.parse(fs.readFileSync(file, 'utf-8'));
+            // Emit a flat patch map instead of a full typetree snapshot. The
+            // patcher merges this into the original database extracted from
+            // the user's game at patch time, so dev-side changes made in
+            // newer game versions are preserved.
+            const patch = {
+                format: 'dialogue-patch',
+                version: 1,
+                target_lang: process.env.TARGET_LANG,
+                actors: {},
+                items: {},
+                dialogues: {}
+            };
 
             // Process Actors
             if (data.actors?.length) {
@@ -186,7 +197,7 @@ async function main() {
                             if (displayNameField) {
                                 const translation = actors[actorKey].translated;
                                 if (translation) {
-                                    displayNameField.value = translation.replace(/\\t/g, '\t');
+                                    patch.actors[nameField.value] = translation.replace(/\\t/g, '\t');
                                     stats.replaced.actors++;
                                     unmatchedStrings.actors.delete(actorKey);
                                 } else {
@@ -217,7 +228,7 @@ async function main() {
                             if (descField) {
                                 const translation = quests[questKey].translated;
                                 if (translation) {
-                                    descField.value = translation.replace(/\\t/g, '\t');
+                                    patch.items[keyField.value] = translation.replace(/\\t/g, '\t');
                                     stats.replaced.quests++;
                                     unmatchedStrings.quests.delete(questKey);
                                 } else {
@@ -253,7 +264,7 @@ async function main() {
                         if (dialogueField && dialogues[dialogueTextKey]) {
                             const translation = dialogues[dialogueTextKey].translated;
                             if (translation) {
-                                dialogueField.value = translation.replace(/\\t/g, '\t');
+                                patch.dialogues[`${convTitle}/${entry.id}/DialogueText`] = translation.replace(/\\t/g, '\t');
                                 stats.replaced.dialogues++;
                                 unmatchedStrings.dialogues.delete(dialogueTextKey);
                             } else {
@@ -272,7 +283,7 @@ async function main() {
                         if (menuField && dialogues[menuTextKey]) {
                             const translation = dialogues[menuTextKey].translated;
                             if (translation) {
-                                menuField.value = translation.replace(/\\t/g, '\t');
+                                patch.dialogues[`${convTitle}/${entry.id}/MenuText`] = translation.replace(/\\t/g, '\t');
                                 stats.replaced.dialogues++;
                                 unmatchedStrings.dialogues.delete(menuTextKey);
                             } else {
@@ -288,7 +299,7 @@ async function main() {
             const baseDir = path.dirname(file);
             const fileNameWithoutExt = path.basename(file, '.json');
             const newFilePath = path.join(baseDir, `${fileNameWithoutExt}-mod.json`);
-            fs.writeFileSync(newFilePath, JSONbig.stringify(data, null, 2));
+            fs.writeFileSync(newFilePath, JSONbig.stringify(patch, null, 2));
         }
         spinner.success();
 

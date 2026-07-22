@@ -60,8 +60,8 @@ For example, to replace the font `Jura-Regular` with your own TTF, place a file 
 
 ## Building the translation
 Run `npm run build`. It's an alias for the following two commands:
- - `npm run function:desheetifier` to pull the strings from the spreadsheet and inject them into game resources
- - `npm run function:bbb` to import game resources into bundles
+ - `npm run function:desheetifier` to pull the strings from the spreadsheet and write them as translation patches
+ - `npm run function:bbb` to merge the patches into the original game files (only translated text fields are modified)
 
 Again, you can run them individually if needed. The result would be the changed game files in your `OUT_DIR`, ready to be put into the game or distributed.
 
@@ -79,6 +79,8 @@ The patcher could be run like this:
 patcher <game_directory>
 ```
 where `<game_directory>` is the root folder of the 1000xRESIST installation (the folder that contains the `1000xRESIST_Data` sub-folder). The patcher applies all changes directly into the game directory in-place. Ideally, you would also build an installation package (using [NSIS](https://nsis.sourceforge.io/) for example) that would automate all of that for the end users.
+
+On Windows, the patcher can also be run without arguments (e.g. by double-clicking it): a file dialog will ask the user to pick `1000xRESIST.exe`, and the console window will stay open afterwards so the output can be read.
 
 
 ## Maintenance

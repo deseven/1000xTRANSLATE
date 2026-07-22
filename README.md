@@ -31,7 +31,7 @@ The toolset is intended to be used in the following way:
 | Sheetifier        | ✅    | Parses game data and imports all strings into Google Sheets         |
 | Translator        | ✅    | (optional) Translates dialogues using LLMs                          |
 | Checker           | ✅    | (optional) Checks for abnormalities in the translated dialogues     |
-| Desheetifier      | ✅    | Pulls all strings from Google Sheets and writes them into game data | 
+| Desheetifier      | ✅    | Pulls all strings from Google Sheets and writes translation patches |
 | Boom Boom Build   | ✅    | Imports required game data, creates distribution packages           |
 
 ### Exporter
@@ -47,10 +47,10 @@ Parses exported game data from `RES_DIR` into human-readable format, imports it 
 *(optional)* Checks for anomalies in the dialogues using LLMs, creating a report of what was found.
 
 ### Desheetifier
-Pulls translated strings from Google Sheets or local file and inserts them into the game data in `RES_DIR`.
+Pulls translated strings from Google Sheets or local file and writes them as flat translation patches (`*-mod.json`) into `RES_DIR`. Patches contain only the translated values keyed by term/actor/quest/dialogue id - not full asset snapshots.
 
 ### Boom Boom Build
-Imports resources from `RES_DIR` into the game files, outputs changed bundles ready to be replaced in the game directory or builds a standalone patcher.
+Executes the translation patches from `RES_DIR` against the original game files (only the targeted text fields are modified, everything else is preserved as-is), imports binary resources, outputs changed bundles ready to be replaced in the game directory or builds a standalone patcher.
 
 
 ## Prerequisites

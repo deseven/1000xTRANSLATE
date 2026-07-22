@@ -51,8 +51,12 @@ class ResourcePatcher:
                  log_fn=None, on_progress=None, clean_output=True):
         """
         :param game_data_dir:      Path to 1000xRESIST_Data directory.
-        :param res_dir:            Path to resources directory (I2Languages-mod.json,
-                                   strings-mod.json, dialogue mods).
+        :param res_dir:            Path to resources directory containing flat
+                                   patch maps (I2Languages-mod.json, strings-mod.json,
+                                   dialogue *-mod.json patches) produced by the
+                                   Desheetifier. These are merged into the original
+                                   assets extracted from the user's game - the
+                                   original assets are never replaced wholesale.
         :param out_dir:            Output directory root (patched files go under
                                    out_dir/1000xRESIST_Data/...).
         :param overrides_dir:      Optional path to texture overrides directory.
@@ -162,7 +166,12 @@ class ResourcePatcher:
 
         self.log(f"Reading file: {i2languages_path}")
         with open(i2languages_path, 'r', encoding='utf-8') as f:
-            self._I2Languages = json.load(f)
+            self._i2_patch = json.load(f)
+        if self._i2_patch.get('format') != 'i2languages-patch':
+            msg = ("Error: I2Languages-mod.json is in the old full-tree format. "
+                   "Re-run Desheetifier to generate a patch file.")
+            self.log(msg)
+            raise RuntimeError(msg)
 
         self.log(f"Reading file: {strings_path}")
         with open(strings_path, 'r', encoding='utf-8') as f:
@@ -190,8 +199,14 @@ class ResourcePatcher:
                     except Exception:
                         continue
                     if found:
-                        obj.save_typetree(self._I2Languages,
-                                          self._I2LocTypetree['I2.Loc.LanguageSourceAsset'])
+                        # Merge translations into the ORIGINAL tree extracted from
+                        # the user's game - never replace the whole asset, so
+                        # content added/changed by newer game versions survives.
+                        tree = obj.read_typetree(self._I2LocTypetree['I2.Loc.LanguageSourceAsset'])
+                        applied = self._apply_i2_patch(tree)
+                        if applied:
+                            obj.save_typetree(tree,
+                                              self._I2LocTypetree['I2.Loc.LanguageSourceAsset'])
                         # Replace legacy Font objects with override TTF/OTF files
                         # (shares the same env / single save pass as I2Languages)
                         self._import_fonts(env)
@@ -201,7 +216,7 @@ class ResourcePatcher:
                         with open(out_path, "wb") as f:
                             f.write(env.file.save(packer="original"))
                         self.on_progress('i2languages', 1, 1)
-                        self.log("I2Languages successfully imported")
+                        self.log(f"I2Languages successfully patched ({applied} terms applied)")
                         break
 
             if not found:
@@ -215,6 +230,139 @@ class ResourcePatcher:
             self.log(msg)
             self.log(traceback.format_exc())
             raise RuntimeError(msg) from e
+
+    # Legacy fallback language indices, used only when the target language
+    # cannot be resolved against mLanguages of the user's game version.
+    LEGACY_LANG_BIND = {'en': 0, 'zh': 1, 'ja': 2}
+
+    def _resolve_language_index(self, source, target_lang):
+        """Resolve the target language index against the mLanguages list of the
+        ORIGINAL LanguageSourceAsset from the user's game version."""
+        languages = source.get('mLanguages', [])
+        target = (target_lang or '').lower()
+        # 1. exact code match (en, zh, pt-BR, ...)
+        for i, lang in enumerate(languages):
+            if str(lang.get('Code', '')).lower() == target:
+                return i
+        # 2. prefix match (zh vs zh-CN, pt vs pt-BR, ...)
+        for i, lang in enumerate(languages):
+            code = str(lang.get('Code', '')).lower()
+            if code and (code.startswith(target) or target.startswith(code)):
+                return i
+        # 3. exact name match (English, Chinese, ...)
+        for i, lang in enumerate(languages):
+            if str(lang.get('Name', '')).lower() == target:
+                return i
+        # 4. legacy fixed binding as a last resort
+        legacy = self.LEGACY_LANG_BIND.get(target)
+        if legacy is not None and legacy < len(languages):
+            self.log(f"Warning: language '{target_lang}' not resolvable, "
+                     f"falling back to legacy index {legacy}")
+            return legacy
+        return None
+
+    def _apply_i2_patch(self, tree):
+        """Apply the flat I2Languages patch to the original typetree in place.
+        Returns the number of terms translated."""
+        terms_patch = self._i2_patch.get('terms', {})
+        if not terms_patch:
+            self.log("I2Languages patch contains no terms, skipping")
+            return 0
+        target_lang = self._i2_patch.get('target_lang')
+        source = tree.get('mSource', {})
+        lang_idx = self._resolve_language_index(source, target_lang)
+        if lang_idx is None:
+            raise RuntimeError(
+                f"Cannot resolve target language '{target_lang}' against the "
+                "game's I2Languages asset")
+        applied = 0
+        for term in source.get('mTerms', []):
+            translation = terms_patch.get(term.get('Term'))
+            if translation:
+                languages = term.setdefault('Languages', [])
+                while len(languages) <= lang_idx:
+                    languages.append('')
+                languages[lang_idx] = translation
+                applied += 1
+        skipped = len(terms_patch) - applied
+        self.log(f"I2Languages: applied {applied} term(s), skipped {skipped} "
+                 f"(not present in this game version), language index {lang_idx}")
+        return applied
+
+    @staticmethod
+    def _find_field(fields, field_type, title):
+        for f in fields or []:
+            if f.get('type') == field_type and f.get('title') == title:
+                return f
+        return None
+
+    def _apply_dialogue_patch(self, typetree, patch):
+        """Apply a flat dialogue patch to the original database typetree in
+        place. Returns the number of fields translated."""
+        target_lang = patch.get('target_lang', '')
+        applied = 0
+
+        actors_patch = patch.get('actors', {})
+        if actors_patch:
+            for actor in typetree.get('actors', []):
+                fields = actor.get('fields', [])
+                name_field = self._find_field(fields, 0, 'Name')
+                if not name_field:
+                    continue
+                translation = actors_patch.get(name_field.get('value'))
+                if not translation:
+                    continue
+                display_field = self._find_field(fields, 4, f'Display Name {target_lang}')
+                if display_field is None:
+                    # workaround for "Grace"
+                    display_field = self._find_field(fields, 0, f'Display Name {target_lang}')
+                if display_field is not None:
+                    display_field['value'] = translation
+                    applied += 1
+
+        items_patch = patch.get('items', {})
+        if items_patch:
+            for item in typetree.get('items', []):
+                fields = item.get('fields', [])
+                key_field = self._find_field(fields, 0, 'Name')
+                if not key_field:
+                    continue
+                translation = items_patch.get(key_field.get('value'))
+                if not translation:
+                    continue
+                desc_field = self._find_field(fields, 4, f'Description {target_lang}')
+                if desc_field is not None:
+                    desc_field['value'] = translation
+                    applied += 1
+
+        dialogues_patch = patch.get('dialogues', {})
+        if dialogues_patch:
+            for conversation in typetree.get('conversations', []):
+                title_field = None
+                for f in conversation.get('fields', []):
+                    if f.get('type') == 0 and str(f.get('title', '')).lower() == 'title':
+                        title_field = f
+                        break
+                conv_title = title_field.get('value') if title_field else None
+                if not conv_title:
+                    continue
+                for entry in conversation.get('dialogueEntries', []):
+                    base_key = f"{conv_title}/{entry.get('id')}"
+                    dialogue_text = dialogues_patch.get(f"{base_key}/DialogueText")
+                    if dialogue_text:
+                        field = self._find_field(entry.get('fields', []), 4, target_lang)
+                        if field is not None:
+                            field['value'] = dialogue_text
+                            applied += 1
+                    menu_text = dialogues_patch.get(f"{base_key}/MenuText")
+                    if menu_text:
+                        field = self._find_field(entry.get('fields', []), 4,
+                                                 f'Menu Text {target_lang}')
+                        if field is not None:
+                            field['value'] = menu_text
+                            applied += 1
+
+        return applied
 
     def _import_strings(self):
         total = len(self.scene_bundles)
@@ -307,15 +455,24 @@ class ResourcePatcher:
                     mod_path = os.path.join(asset_dir, filename)
 
                     if os.path.exists(mod_path) and os.path.getsize(mod_path) > 0:
-                        self.log(f"Found modified dialogue: {mod_path} for {asset_path or '(no container path)'}")
+                        self.log(f"Found dialogue patch: {mod_path} for {asset_path or '(no container path)'}")
                         with open(mod_path, 'r', encoding='utf-8') as f:
-                            modified_typetree = json.load(f)
+                            patch = json.load(f)
 
-                        if modified_typetree:
-                            obj.save_typetree(modified_typetree)
+                        if patch.get('format') != 'dialogue-patch':
+                            self.log(f"Warning: {mod_path} is in the old full-tree "
+                                     "format, skipping (re-run Desheetifier)")
+                            continue
+
+                        # Merge translations into the ORIGINAL typetree read from
+                        # the user's bundle - never replace the whole database.
+                        applied = self._apply_dialogue_patch(typetree, patch)
+                        if applied:
+                            obj.save_typetree(typetree)
                             needs_saving = True
                             self.dialogues_num += 1
                             bundle_dialogues_count += 1
+                            self.log(f"Applied {applied} translation(s) from {mod_path}")
 
                 if needs_saving:
                     out_bundle_path = os.path.join(self.out_dir, self.STREAMING_ASSETS_PATH, bundle_name)
