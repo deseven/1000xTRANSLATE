@@ -7,6 +7,9 @@ Download a new one from releases and unpack to the same dir, replacing all files
 
 After that do `npm run clean:all` followed by `npm run init`, `npm run validate` and `npm run dump`. I'll try to keep backwards compatibility as much as possible. Additional instructions for specific updates listed below.
 
+## Updating to 26.7
+`GAME_UNITY_VERSION` is now deprecated and can be removed from your `.env` (not required).
+
 ## Updating to 26.3
 Version 26.3 is the first version with changes required to support the new game patch released on the 4th of November 2025. Earlier patches are **NO LONGER SUPPORTED**, so in case you're targeting some earlier game version you better stay at 26.2.
 
