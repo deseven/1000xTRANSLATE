@@ -122,16 +122,21 @@ if os.getenv('CREATE_PATCHER', '').lower() == 'true':
         log(f"Warning: RES_DIR '{res_dir}' does not exist, skipping resource copy")
         print(f"Warning: RES_DIR '{res_dir}' does not exist, skipping resource copy")
 
-    # Copy PNG (texture) and TTF/OTF (font) overrides from overrides dir
+    # Copy PNG (texture) and TTF/OTF (font) overrides from overrides dir.
+    # Subdirectories are preserved - sprite atlas sprite overrides live in
+    # per-atlas subfolders (e.g. overrides/MapPanel/Orchard_Map.png).
     if overrides_dir and os.path.isdir(overrides_dir):
         patcher_overrides_dir = os.path.join(abs_out_dir, 'overrides')
         os.makedirs(patcher_overrides_dir, exist_ok=True)
         copied_overrides = 0
-        for filename in os.listdir(overrides_dir):
-            if filename.lower().endswith(('.png', '.ttf', '.otf')):
-                src = os.path.join(overrides_dir, filename)
-                if os.path.isfile(src):
-                    shutil.copy2(src, os.path.join(patcher_overrides_dir, filename))
+        for dirpath, dirnames, filenames in os.walk(overrides_dir):
+            for filename in filenames:
+                if filename.lower().endswith(('.png', '.ttf', '.otf')):
+                    src = os.path.join(dirpath, filename)
+                    rel = os.path.relpath(dirpath, overrides_dir)
+                    dst_dir = os.path.join(patcher_overrides_dir, rel)
+                    os.makedirs(dst_dir, exist_ok=True)
+                    shutil.copy2(src, os.path.join(dst_dir, filename))
                     copied_overrides += 1
         log(f"Copied {copied_overrides} overrides from {overrides_dir} to {patcher_overrides_dir}")
         print(f"Copied {copied_overrides} overrides to: {patcher_overrides_dir}")

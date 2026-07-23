@@ -103,8 +103,10 @@ class ResourcePatcher:
         self.dialogue_bundles = [f for f in all_bundles if f.endswith('.bundle') and '_other_' in f]
         self.texture_bundles  = [f for f in all_bundles if f.endswith('.bundle') and '_texture_' in f]
         self.scene_bundles    = [f for f in all_bundles if f.endswith('.bundle') and '_scenes_' in f]
+        self.atlas_bundles    = [f for f in all_bundles if f.endswith('.bundle') and 'spriteatlas' in f.lower()]
         self.log(f"Found bundles: {len(self.dialogue_bundles)} dialogue, "
-                 f"{len(self.texture_bundles)} texture, {len(self.scene_bundles)} scene")
+                 f"{len(self.texture_bundles)} texture, {len(self.scene_bundles)} scene, "
+                 f"{len(self.atlas_bundles)} sprite atlas")
 
         # Load typetree
         if typetree_path is None:
@@ -490,15 +492,60 @@ class ResourcePatcher:
                     gc.collect()
         self.on_progress('dialogues', total, total)
 
+    def _import_sprite_atlas(self, env, obj, asset_path):
+        """Replace the packed texture of a SpriteAtlas with an override PNG.
+        Returns 1 if an override was applied, 0 otherwise.
+
+        Override layout:
+          OVERRIDES_DIR/<AtlasName>.png  - replaces the whole atlas texture;
+                                           must keep the original dimensions
+                                           (sprite rects are fixed)
+        """
+        atlas_name = os.path.basename(asset_path).replace('.spriteatlas', '')
+        override = os.path.join(self.overrides_dir, atlas_name + '.png')
+        if not os.path.isfile(override):
+            return 0
+
+        data = obj.read()
+        pathid_to_obj = {o.path_id: o for o in env.objects}
+
+        # local atlas texture pages, in order of appearance
+        page_pids = []
+        for _, rd in data.m_RenderDataMap:
+            pid = rd.texture.m_PathID
+            if rd.texture.m_FileID == 0 and pid in pathid_to_obj and pid not in page_pids:
+                page_pids.append(pid)
+
+        if not page_pids:
+            self.log(f"Warning: atlas {atlas_name} has no local texture pages, "
+                     f"cannot apply {override}")
+            return 0
+        if len(page_pids) > 1:
+            self.log(f"Warning: atlas {atlas_name} has {len(page_pids)} pages, "
+                     f"whole-atlas override applies to page 0 only")
+
+        tex_data = pathid_to_obj[page_pids[0]].read()
+        img = Image.open(override)
+        if img.size != (tex_data.m_Width, tex_data.m_Height):
+            self.log(f"Warning: atlas override {override} has wrong dimensions "
+                     f"{img.size}, expected {(tex_data.m_Width, tex_data.m_Height)} "
+                     f"(sprite rects are fixed), skipping")
+            return 0
+
+        self.log(f"Found atlas override: {override} for {asset_path}")
+        tex_data.image = img
+        tex_data.save()
+        return 1
+
     def _import_textures(self):
         if self.skip_textures:
             return
         if not self.overrides_dir:
             return
 
-        total = len(self.texture_bundles)
+        total = len(self.texture_bundles) + len(self.atlas_bundles)
         textures_set = set(self.textures)
-        for idx, bundle_name in enumerate(self.texture_bundles):
+        for idx, bundle_name in enumerate(self.texture_bundles + self.atlas_bundles):
             self.on_progress('textures', idx, total)
             needs_saving = False
             file_path = os.path.join(self.bundle_dir, bundle_name)
@@ -509,23 +556,30 @@ class ResourcePatcher:
                 bundle_textures_count = 0
 
                 for asset_path, obj in env.container.items():
+                    if asset_path not in textures_set:
+                        continue
                     if obj.type.name in ['Texture2D', 'Sprite']:
-                        if asset_path in textures_set:
-                            data = obj.read()
-                            check_path = asset_path
-                            if not check_path.endswith('.png'):
-                                check_path += '.png'
-                            override = os.path.join(self.overrides_dir, os.path.basename(check_path))
-                            if os.path.exists(override):
-                                self.log(f"Found texture override: {override} for {asset_path}")
-                                img = Image.open(override)
-                                if obj.type.name == 'Sprite':
-                                    data = data.m_RD.texture.read()
-                                data.image = img
-                                data.save()
-                                needs_saving = True
-                                self.textures_num += 1
-                                bundle_textures_count += 1
+                        data = obj.read()
+                        check_path = asset_path
+                        if not check_path.endswith('.png'):
+                            check_path += '.png'
+                        override = os.path.join(self.overrides_dir, os.path.basename(check_path))
+                        if os.path.exists(override):
+                            self.log(f"Found texture override: {override} for {asset_path}")
+                            img = Image.open(override)
+                            if obj.type.name == 'Sprite':
+                                data = data.m_RD.texture.read()
+                            data.image = img
+                            data.save()
+                            needs_saving = True
+                            self.textures_num += 1
+                            bundle_textures_count += 1
+                    elif obj.type.name == 'SpriteAtlas':
+                        applied = self._import_sprite_atlas(env, obj, asset_path)
+                        if applied:
+                            needs_saving = True
+                            self.textures_num += applied
+                            bundle_textures_count += applied
 
                 if needs_saving:
                     out_bundle_path = os.path.join(self.out_dir, self.STREAMING_ASSETS_PATH, bundle_name)

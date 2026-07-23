@@ -95,8 +95,9 @@ bundle_dir = os.path.join(data_dir, streaming_assets_path)
 dialogue_bundles = [f for f in os.listdir(bundle_dir) if f.endswith('.bundle') and '_other_' in f]
 texture_bundles = [f for f in os.listdir(bundle_dir) if f.endswith('.bundle') and '_texture_' in f]
 scene_bundles = [f for f in os.listdir(bundle_dir) if f.endswith('.bundle') and '_scenes_' in f]
+atlas_bundles = [f for f in os.listdir(bundle_dir) if f.endswith('.bundle') and 'spriteatlas' in f.lower()]
 
-log(f"Found {len(dialogue_bundles)} dialogue bundles, {len(texture_bundles)} texture bundles, {len(scene_bundles)} scene bundles")
+log(f"Found {len(dialogue_bundles)} dialogue bundles, {len(texture_bundles)} texture bundles, {len(scene_bundles)} scene bundles, {len(atlas_bundles)} sprite atlas bundles")
 
 typetree_path = os.path.join(os.path.dirname(__file__), os.path.join('../', '../', 'Data/I2.loc.typetree.json'))
 log(f"Reading typetree from: {typetree_path}")
@@ -233,9 +234,48 @@ if EXPORT_DIALOGUES:
             log(f"ERROR processing dialogue bundle {bundle_name}: {str(e)}")
             log(traceback.format_exc())
 
+def export_sprite_atlas(env, obj, asset_path):
+    """Export the packed texture page(s) of a SpriteAtlas as PNG(s).
+
+    Output layout:
+      TEXTURES_DIR/<AtlasName>.png       - the atlas texture (single page)
+      TEXTURES_DIR/<AtlasName>#<n>.png   - extra pages, if any
+    """
+    global textures_num
+    atlas_name = os.path.basename(asset_path).replace('.spriteatlas', '')
+    data = obj.read()
+    pathid_to_obj = {o.path_id: o for o in env.objects}
+
+    # decode each atlas page once
+    pages = []
+    seen = set()
+    for _, rd in data.m_RenderDataMap:
+        tex_ref = rd.texture
+        pid = tex_ref.m_PathID
+        if tex_ref.m_FileID != 0 or pid not in pathid_to_obj:
+            log(f"Warning: atlas {atlas_name} references an external texture "
+                f"(fileID={tex_ref.m_FileID}, pathID={pid}), skipping page")
+            continue
+        if pid not in seen:
+            seen.add(pid)
+            pages.append(pathid_to_obj[pid].read().image)
+
+    if not pages:
+        log(f"Warning: atlas {atlas_name} has no decodable texture pages")
+        return
+
+    os.makedirs(textures_dir, exist_ok=True)
+    for idx, img in enumerate(pages):
+        suffix = '' if len(pages) == 1 else f'#{idx}'
+        full_path = os.path.join(textures_dir, f"{atlas_name}{suffix}.png")
+        log(f"Writing atlas texture: {full_path}")
+        img.save(full_path)
+
+    textures_num += 1
+
 if EXPORT_TEXTURES:
     exported_textures = set()
-    for bundle_name in tqdm_wrap(iterable=texture_bundles, desc='Exporting textures:'):
+    for bundle_name in tqdm_wrap(iterable=texture_bundles + atlas_bundles, desc='Exporting textures:'):
         file_path = os.path.join(bundle_dir, bundle_name)
         log(f"Reading: {file_path}")
         try:
@@ -255,6 +295,9 @@ if EXPORT_TEXTURES:
                         log(f"Writing texture: {path}")
                         data.image.save(path)
                         textures_num += 1
+                        exported_textures.add(asset_path)
+                    elif obj.type.name == 'SpriteAtlas':
+                        export_sprite_atlas(env, obj, asset_path)
                         exported_textures.add(asset_path)
         except Exception as e:
             log(f"ERROR processing texture bundle {bundle_name}: {str(e)}")
