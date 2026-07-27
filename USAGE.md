@@ -82,6 +82,29 @@ where `<game_directory>` is the root folder of the 1000xRESIST installation (the
 
 On Windows, the patcher can also be run without arguments (e.g. by double-clicking it): a file dialog will ask the user to pick `1000xRESIST.exe`, and the console window will stay open afterwards so the output can be read.
 
+#### Patcher output format
+The patcher's progress output is machine-readable, so an external installer can display a percentage indicator while applying the patch. The output is split into four sections, one per import step, always printed in the same order:
+
+```
+Importing core resources.
+[1:#]
+
+Importing strings.
+[120:###########################################...]
+
+Importing dialogues.
+[45:##################...]
+
+Importing textures.
+[30:#######...]
+```
+
+Each section starts with the step name on its own line, followed by a progress line in the form `[{actions_num}:{indicator}]`, where:
+ - `actions_num` is the total number of actions for the step: `1` for core resources (I2Languages and fonts are patched in the single `resources.assets` file), and the number of bundles that have to be processed for strings, dialogues and textures;
+ - `indicator` is a stream of `#` characters printed as the work advances — one `#` per completed action, forming a growing progress bar. The step is finished when the number of `#` characters equals `actions_num` and the closing `]` is printed.
+
+A step that has nothing to do (e.g. textures when the patcher is bundled without overrides) is reported as `[0:]`. After all sections, a `[SUMMARY]` block with the totals is printed. Note that if an error occurs mid-step, the progress line for that step is left unclosed and the error message is printed instead — treat a non-zero exit code as a failure.
+
 
 ## Maintenance
 Use `npm run clean` to clean exported and parsed resources.

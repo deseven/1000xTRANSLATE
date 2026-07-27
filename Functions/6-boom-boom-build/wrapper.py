@@ -15,6 +15,16 @@ All patching resources (strings, dialogues, textures, etc.) are expected to
 sit next to this executable in a 'resources' sub-folder, and texture overrides
 in an 'overrides' sub-folder.  Patched files are written directly into the
 provided game directory.
+
+Progress output is machine-readable: each import step prints a section of the
+form
+
+    Importing strings.
+    [45:##########...]
+
+where the number in brackets is the total amount of actions for the step and
+each '#' marks one finished action, so external installers can display a
+percentage indicator.
 """
 
 import os
@@ -32,26 +42,64 @@ _base_dir = os.path.dirname(sys.executable if getattr(sys, 'frozen', False) else
 
 
 # ---------------------------------------------------------------------------
-# Simple progress reporting
+# Machine-readable progress reporting
+#
+# Output is split into sections, one per import step, always in the order
+# defined by _STAGES:
+#
+#     Importing strings.
+#     [45:#############...]
+#
+# The number in brackets is the total amount of actions for the step
+# (1 for core resources - I2Languages and fonts live in the single
+# resources.assets file, otherwise the number of bundles to process) and one
+# '#' is printed per finished action, forming a growing progress bar.
+# A step with nothing to do is reported as [0:].
 # ---------------------------------------------------------------------------
 
-_stage_labels = {
-    'i2languages': 'Importing I2Languages',
-    'strings':     'Importing strings',
-    'dialogues':   'Importing dialogues',
-    'textures':    'Importing textures',
-}
+_STAGES = [
+    ('i2languages', 'Importing core resources.'),
+    ('strings',     'Importing strings.'),
+    ('dialogues',   'Importing dialogues.'),
+    ('textures',    'Importing textures.'),
+]
 
-_stage_started = set()
+_stage_labels = dict(_STAGES)
+_stage_state  = {}
 
 
 def on_progress(stage, current, total):
-    if total == 0:
+    state = _stage_state.setdefault(stage, {'started': False, 'done': False, 'last': 0})
+    if state['done']:
         return
-    label = _stage_labels.get(stage, stage)
-    if current == 0 and stage not in _stage_started:
-        print(f"{label}...", flush=True)
-        _stage_started.add(stage)
+    if not state['started']:
+        print(f"{_stage_labels.get(stage, stage)}\n[{total}:", end='', flush=True)
+        state['started'] = True
+        if total == 0:
+            print("]\n", flush=True)
+            state['done'] = True
+            return
+    if current > state['last']:
+        print('#' * (current - state['last']), end='', flush=True)
+        state['last'] = current
+    if current >= total:
+        print("]\n", flush=True)
+        state['done'] = True
+
+
+def _finish_line():
+    """If a progress section is currently open (error path), move to a fresh
+    line so the error message doesn't stick to the progress bar."""
+    if any(s['started'] and not s['done'] for s in _stage_state.values()):
+        print(flush=True)
+
+
+def _flush_remaining_stages():
+    """Emit placeholder sections for steps that never reported progress
+    (e.g. textures skipped because there is no overrides folder)."""
+    for stage, label in _STAGES:
+        if stage not in _stage_state:
+            print(f"{label}\n[0:]\n", flush=True)
 
 
 # ---------------------------------------------------------------------------
@@ -169,18 +217,25 @@ def _run(game_dir):
         )
         summary = patcher.run()
     except FileNotFoundError as e:
+        _finish_line()
         print(f"Error: {e}")
         return 1
     except RuntimeError as e:
+        _finish_line()
         print(f"Error: {e}")
         return 1
     except Exception as e:
+        _finish_line()
         print(f"Unexpected error: {e}")
         print(traceback.format_exc())
         return 1
 
+    # emit placeholder sections for steps that never reported progress
+    # (e.g. textures skipped because there is no overrides folder)
+    _flush_remaining_stages()
+
     print(
-        "\n[SUMMARY]\n"
+        "[SUMMARY]\n"
         f"Imported I2Languages:        {summary['i2languages']}\n"
         f"Imported strings:            {summary['strings']}\n"
         f"Imported textures:           {summary['textures']}\n"
