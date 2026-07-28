@@ -141,3 +141,7 @@ You can expect to spend from 1 to 5 USD on translation and checking.
 
 ## Importing original Sunset Vistor script files
 If you already started a translation using the files you got from the devs (two CSV files - System and Dialogue), the toolset includes the tool to transfer translated strings from that format. Upload what you have as a separate spreadsheet and define it as `SV_SPREADSHEET_ID` in your `.env` file, then run `npm run tool:svscript-convert`. The tool assumes that your translation would be in column F of the `System` and `Dialogue` sheets.
+
+
+## Sorting dialogues in the natural order
+Dialogue entries in the game files are linked together (each entry points to the next one), and this link order often differs from the numeric id order. Fresh imports via Sheetifier are added in the natural (conversation flow) order automatically. To reorder dialogues that are already in your storage, run `npm run tool:sort-dialogues` (requires the exported resources in `RES_DIR`). Rows are physically moved, so your notes, comments and color fills stay attached to their rows. Keys that can't be found in the exported dialogue databases keep their relative order and stay at the end of their current block. You can run `npm run tool:sort-dialogues-dry-run` to only see how many rows would be moved without changing anything.

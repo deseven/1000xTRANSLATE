@@ -24,16 +24,16 @@ try {
 // Variable definitions
 const variables = {
     STORAGE: {
-        required_by: ['function:2-sheetifier', 'function:3-translator', 'function:4-checker', 'function:5-desheetifier', 'tool:svscript-convert'],
+        required_by: ['function:2-sheetifier', 'function:3-translator', 'function:4-checker', 'function:5-desheetifier', 'tool:svscript-convert', 'tool:sort-dialogues'],
         check: 'checkStorageValue',
         message: 'must be either "GOOGLE" or a valid path to an xlsx file'
     },
     SPREADSHEET_ID: {
-        required_by: ['function:2-sheetifier', 'function:3-translator', 'function:4-checker', 'function:5-desheetifier', 'tool:svscript-convert'],
+        required_by: ['function:2-sheetifier', 'function:3-translator', 'function:4-checker', 'function:5-desheetifier', 'tool:svscript-convert', 'tool:sort-dialogues'],
         conditional: 'requiresGoogleStorage'
     },
     GOOGLE_CREDENTIALS_FILE: {
-        required_by: ['function:2-sheetifier', 'function:3-translator', 'function:4-checker', 'function:5-desheetifier', 'tool:svscript-convert'],
+        required_by: ['function:2-sheetifier', 'function:3-translator', 'function:4-checker', 'function:5-desheetifier', 'tool:svscript-convert', 'tool:sort-dialogues'],
         check: 'fileExistsAndNotEmpty',
         message: 'file does not exist or is empty',
         conditional: 'requiresGoogleStorage'
@@ -54,7 +54,7 @@ const variables = {
         required_by: ['function:2-sheetifier', 'function:5-desheetifier']
     },
     DIALOGUES_SHEET_NAME: {
-        required_by: ['function:2-sheetifier', 'function:3-translator', 'function:4-checker', 'function:5-desheetifier']
+        required_by: ['function:2-sheetifier', 'function:3-translator', 'function:4-checker', 'function:5-desheetifier', 'tool:sort-dialogues']
     },
     STRINGS_SHEET_NAME: {
         required_by: ['function:2-sheetifier', 'function:5-desheetifier']
@@ -84,7 +84,7 @@ const variables = {
         message: "does not equal to 'true' or 'false'"
     },
     RES_DIR: {
-        required_by: ['function:1-exporter', 'function:6-boom-boom-build'],
+        required_by: ['function:1-exporter', 'function:6-boom-boom-build', 'tool:sort-dialogues'],
         check: 'validDirOrCreatable',
         message: 'is not a valid directory or cannot be created'
     },
@@ -108,7 +108,7 @@ const variables = {
         required_by: []
     },
     BASE_LANG: {
-        required_by: ['function:2-sheetifier'],
+        required_by: ['function:2-sheetifier', 'tool:sort-dialogues'],
         check: 'checkLangCode',
         message: 'is not a valid 2-symbol [a-z] code'
     },

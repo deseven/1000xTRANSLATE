@@ -7,6 +7,9 @@ Download a new one from releases and unpack to the same dir, replacing all files
 
 After that do `npm run clean:all` followed by `npm run init`, `npm run validate` and `npm run dump`. I'll try to keep backwards compatibility as much as possible. Additional instructions for specific updates listed below.
 
+## Updating to 26.8
+Dialogues are now ordered by the actual conversation flow (following the links between dialogue entries) instead of the numeric id order. New imports get the natural order automatically, existing rows in your storage are left untouched. If you want to reorder dialogues that are already in your storage, run `npm run tool:sort-dialogues` (or `npm run tool:sort-dialogues-dry-run` first to see how many rows would be moved). Your notes, comments and color fills will stay attached to their rows.
+
 ## Updating to 26.7
 `GAME_UNITY_VERSION` is now deprecated and can be removed from your `.env` (not required).
 

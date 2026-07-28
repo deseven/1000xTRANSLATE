@@ -1,0 +1,11 @@
+{
+  "name": "dialogue-order",
+  "version": "1.0.0",
+  "description": "shared logic for natural dialogue ordering (used by the sheetifier and the sort-dialogues tool)",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "deseven",
+  "license": "ISC"
+}

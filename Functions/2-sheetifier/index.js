@@ -2,6 +2,7 @@ const dotenv = require('dotenv');
 const fs = require('fs');
 const path = require('path');
 const ThousandXspreadsheeT = require('../../Misc/ThousandXspreadsheeT');
+const { orderConversationEntries } = require('../../Misc/dialogue-order');
 const nanospinner = require('nanospinner');
 
 const initspinner = nanospinner.createSpinner('Initializing...').start();
@@ -177,7 +178,10 @@ jsonFiles.forEach(file => {
                 );
                 const convTitle = titleField?.value || '';
 
-                conversation.dialogueEntries?.forEach(entry => {
+                // iterate entries in natural (conversation flow) order, following
+                // outgoing links from the START node, so that new keys are appended
+                // to the sheet in the order the dialogue actually plays out
+                orderConversationEntries(conversation.dialogueEntries).forEach(entry => {
                     const dialogueField = entry.fields?.find(f =>
                         f.type === 4 &&
                         f.title === process.env.BASE_LANG

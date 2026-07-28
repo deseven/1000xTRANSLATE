@@ -1,6 +1,6 @@
 {
   "name": "1000xtranslate",
-  "version": "26.7.0",
+  "version": "26.8.0",
   "description": "A collection of tools to translate 1000xRESIST into your language",
   "main": "index.js",
   "scripts": {
@@ -8,6 +8,8 @@
     "clean:all": "node index.js clean:all",
     "validate": "node index.js validate",
     "tool:svscript-convert": "node index.js run:tool svscript-convert",
+    "tool:sort-dialogues": "node index.js run:tool sort-dialogues",
+    "tool:sort-dialogues-dry-run": "node index.js run:tool sort-dialogues --dry-run",
     "function:exporter": "node index.js run:function 1-exporter",
     "function:sheetifier": "node index.js run:function 2-sheetifier",
     "function:translator": "node index.js run:function 3-translator",

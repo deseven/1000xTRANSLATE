@@ -2,6 +2,7 @@ const { google } = require('googleapis');
 const fs = require('fs');
 const path = require('path');
 const ExcelJS = require('exceljs');
+const { computeMoves } = require('../dialogue-order');
 
 class ThousandXspreadsheeT {
     constructor(config) {
@@ -600,6 +601,131 @@ class ThousandXspreadsheeT {
         // For local storage, we skip applying formatting to preserve existing file formatting
         // This is a no-op for local files - formatting is only applied for Google Sheets
         return;
+    }
+
+    /**
+     * Reorders the rows of the Dialogues sheet to match the given key order.
+     * Rows are physically moved (not rewritten), so user notes, comments and
+     * color fills travel with their rows. Keys from targetKeys that don't exist
+     * in the sheet are ignored; existing keys missing from targetKeys keep
+     * their relative order at the end.
+     *
+     * @param {string[]} targetKeys full desired order of dialogue keys
+     * @returns {number} number of row moves performed (0 if already sorted)
+     */
+    async reorderDialogues(targetKeys) {
+        const existing = await this.getDialogues();
+        const currentKeys = Object.keys(existing);
+
+        // map target keys to existing casing, drop unknown ones
+        const existingByLower = new Map(currentKeys.map(k => [k.toLowerCase(), k]));
+        const target = [];
+        const seen = new Set();
+        for (const key of targetKeys) {
+            const existingKey = existingByLower.get(key.toLowerCase());
+            if (existingKey !== undefined && !seen.has(existingKey)) {
+                seen.add(existingKey);
+                target.push(existingKey);
+            }
+        }
+        // keep existing keys missing from targetKeys at the end, in current order
+        for (const key of currentKeys) {
+            if (!seen.has(key)) {
+                seen.add(key);
+                target.push(key);
+            }
+        }
+
+        const moves = computeMoves(currentKeys, target);
+        if (moves.length === 0) {
+            return 0;
+        }
+
+        if (this.storageType === 'GOOGLE') {
+            await this.#moveGoogleDialogueRows(moves);
+        } else {
+            await this.#reorderLocalDialogueRows(currentKeys, target);
+        }
+        return moves.length;
+    }
+
+    // Physically moves rows via moveDimension so cell formatting, notes and
+    // comments move along with the content. Moves are sent in chunked
+    // batchUpdate calls; every move only ever shifts a row upwards, so
+    // sequential application matches the simulated order exactly.
+    async #moveGoogleDialogueRows(moves) {
+        const sheetId = await this.#getSheetId(this.sheetNames.dialogues);
+        if (!sheetId) throw new Error('Dialogues sheet not found');
+
+        const CHUNK_SIZE = 250;
+        for (let offset = 0; offset < moves.length; offset += CHUNK_SIZE) {
+            const chunk = moves.slice(offset, offset + CHUNK_SIZE);
+            const requests = chunk.map(move => ({
+                moveDimension: {
+                    // +1: sheet rows are 0-based here and row 0 is the header
+                    source: {
+                        sheetId: sheetId,
+                        dimension: 'ROWS',
+                        startIndex: move.from + 1,
+                        endIndex: move.from + 2
+                    },
+                    destinationIndex: move.to + 1
+                }
+            }));
+            await this.#executeWithRetry(() =>
+                this.sheets.spreadsheets.batchUpdate({
+                    spreadsheetId: this.spreadsheetId,
+                    requestBody: { requests }
+                })
+            );
+            console.log(`Moved rows ${Math.min(offset + CHUNK_SIZE, moves.length)}/${moves.length}...`);
+        }
+    }
+
+    // Rewrites local xlsx rows in place from a full snapshot of every row
+    // (values, styles, notes, heights), effectively permuting the rows while
+    // keeping everything ExcelJS is aware of attached to the content.
+    async #reorderLocalDialogueRows(currentKeys, target) {
+        await this.#ensureWorkbookLoaded();
+
+        const worksheet = this.workbook.getWorksheet(this.sheetNames.dialogues);
+        if (!worksheet) throw new Error(`Worksheet '${this.sheetNames.dialogues}' not found`);
+
+        const COLUMN_COUNT = 4;
+        const snapshot = currentKeys.map((_, i) => {
+            const row = worksheet.getRow(i + 2);
+            const cells = [];
+            for (let c = 1; c <= COLUMN_COUNT; c++) {
+                const cell = row.getCell(c);
+                cells.push({
+                    value: cell.value,
+                    style: { ...cell.style },
+                    note: cell.note !== undefined ? cell.note : null
+                });
+            }
+            return { cells, height: row.height };
+        });
+
+        const sourceIndex = new Map(currentKeys.map((key, i) => [key, i]));
+        target.forEach((key, i) => {
+            const snap = snapshot[sourceIndex.get(key)];
+            const row = worksheet.getRow(i + 2);
+            snap.cells.forEach((cellData, c) => {
+                const cell = row.getCell(c + 1);
+                cell.value = cellData.value;
+                cell.style = cellData.style;
+                if (cellData.note) {
+                    cell.note = cellData.note;
+                } else if (cell._comment) {
+                    // assigning cell.note = null creates a broken comment that
+                    // crashes ExcelJS on save, so clear the comment directly
+                    cell._comment = null;
+                }
+            });
+            row.height = snap.height;
+        });
+
+        this._dirty = true;
     }
 
     async commit() {
