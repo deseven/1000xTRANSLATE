@@ -7,6 +7,7 @@
     "clean": "node index.js clean",
     "clean:all": "node index.js clean:all",
     "validate": "node index.js validate",
+    "tool:override-TMP": "node index.js run:tool override-TMP",
     "tool:svscript-convert": "node index.js run:tool svscript-convert",
     "tool:sort-dialogues": "node index.js run:tool sort-dialogues",
     "tool:sort-dialogues-dry-run": "node index.js run:tool sort-dialogues --dry-run",

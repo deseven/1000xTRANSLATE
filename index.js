@@ -60,7 +60,7 @@ const variables = {
         required_by: ['function:2-sheetifier', 'function:5-desheetifier']
     },
     GAME_DATA_DIR: {
-        required_by: ['function:1-exporter', 'function:6-boom-boom-build'],
+        required_by: ['function:1-exporter', 'function:6-boom-boom-build', 'tool:override-TMP'],
         check: 'dirExistsAndNotEmpty',
         message: 'directory does not exist or is empty'
     },
@@ -95,7 +95,7 @@ const variables = {
         conditional: 'requiresTextures'
     },
     OVERRIDES_DIR: {
-        required_by: [],
+        required_by: ['tool:override-TMP'],
         check: 'validDirOrCreatable',
         message: 'is not a valid directory or cannot be created'
     },
@@ -486,11 +486,14 @@ function run(dir, extraArgs = []) {
         if (fs.existsSync(mainPath)) {
             console.log(chalk.blue(`Running Python: ${mainPath}`));
 
+            // Join the extra arguments and escape them properly
+            const pyArgsString = extraArgs.map(arg => `"${arg}"`).join(' ');
+
             if (process.platform === 'win32') {
                 const batchContent = `
                     @echo off
                     call ".venv\\Scripts\\activate.bat"
-                    python main.py
+                    python main.py ${pyArgsString}
                     deactivate
                 `.trim();
 
@@ -511,7 +514,7 @@ function run(dir, extraArgs = []) {
                 fs.unlinkSync(batchPath);
             } else {
                 try {
-                    execSync(`source .venv/bin/activate && python main.py`, {
+                    execSync(`source .venv/bin/activate && python main.py ${pyArgsString}`, {
                         cwd: dir,
                         stdio: 'inherit',
                         shell: true

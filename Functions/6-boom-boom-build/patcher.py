@@ -7,6 +7,13 @@ import traceback
 import UnityPy
 from PIL import Image
 
+from tmp_override import (
+    TMP_OVERRIDE_FORMAT,
+    is_tmp_tree,
+    tmp_fingerprint,
+    merge_tmp_override,
+)
+
 
 def _load_env(file_path):
     """Read file into memory and load with UnityPy.
@@ -123,11 +130,15 @@ class ResourcePatcher:
             self.textures = [line.strip() for line in f.readlines()]
 
         # Counters
-        self.strings_num   = 0
-        self.textures_num  = 0
-        self.dialogues_num = 0
-        self.bundles_num   = 0
-        self.fonts_num     = 0
+        self.strings_num      = 0
+        self.textures_num     = 0
+        self.dialogues_num    = 0
+        self.bundles_num      = 0
+        self.fonts_num        = 0
+        self.tmp_overrides_num = 0
+
+        # TMP overrides (loaded lazily on first use in _import_strings)
+        self._tmp_overrides = None
 
     # ------------------------------------------------------------------
     # Public API
@@ -366,7 +377,39 @@ class ResourcePatcher:
 
         return applied
 
+    def _load_tmp_overrides(self):
+        """Load TMP overrides from {overrides_dir}/TMP/*.json, keyed by the
+        fingerprint stored in each file (NOT recomputed from the stored tree -
+        the tree is meant to be edited, which changes its hash)."""
+        self._tmp_overrides = {}
+        if not self.overrides_dir:
+            return
+        tmp_dir = os.path.join(self.overrides_dir, 'TMP')
+        if not os.path.isdir(tmp_dir):
+            return
+        for filename in sorted(os.listdir(tmp_dir)):
+            if not filename.lower().endswith('.json'):
+                continue
+            path = os.path.join(tmp_dir, filename)
+            try:
+                with open(path, 'r', encoding='utf-8') as f:
+                    payload = json.load(f)
+            except Exception as e:
+                self.log(f"Warning: failed to read TMP override '{path}': {str(e)}")
+                continue
+            if payload.get('format') != TMP_OVERRIDE_FORMAT or 'tree' not in payload or 'hash' not in payload:
+                self.log(f"Warning: '{path}' is not a valid TMP override, skipping")
+                continue
+            if payload['hash'] in self._tmp_overrides:
+                self.log(f"Warning: duplicate TMP override for hash {payload['hash']} "
+                         f"('{path}'), keeping the first one")
+                continue
+            self._tmp_overrides[payload['hash']] = payload['tree']
+        if self._tmp_overrides:
+            self.log(f"Loaded {len(self._tmp_overrides)} TMP override(s) from {tmp_dir}")
+
     def _import_strings(self):
+        self._load_tmp_overrides()
         total = len(self.scene_bundles)
         for idx, bundle_name in enumerate(self.scene_bundles):
             self.on_progress('strings', idx, total)
@@ -377,6 +420,7 @@ class ResourcePatcher:
             try:
                 env = _load_env(file_path)
                 bundle_strings_count = 0
+                bundle_overrides_count = 0
 
                 for obj in env.objects:
                     if obj.type.name == 'MonoBehaviour':
@@ -387,19 +431,33 @@ class ResourcePatcher:
                         except Exception as inner_e:
                             self.log(f"Error processing object in {bundle_name}: {str(inner_e)}")
                             continue
-                        if 'm_text' in tree and 'm_fontAsset' in tree and '_SortingLayer' in tree:
+                        if is_tmp_tree(tree):
+                            changed = False
+                            # TMP overrides first: replace the whole object
+                            # (keeping the target's own pointers), the regular
+                            # string replacement below then still runs on the
+                            # resulting tree
+                            if self._tmp_overrides:
+                                override = self._tmp_overrides.get(tmp_fingerprint(tree))
+                                if override is not None:
+                                    tree = merge_tmp_override(tree, override)
+                                    changed = True
+                                    self.tmp_overrides_num += 1
+                                    bundle_overrides_count += 1
                             strings_key = tree['m_text'].replace('\t', '\\t').replace('\n', '\\n')
                             if strings_key in self._strings and self._strings[strings_key] != "":
                                 tree['m_text'] = self._strings[strings_key].replace('\\t', '\t').replace('\\n', '\n')
-                                obj.save_typetree(tree)
-                                needs_saving = True
+                                changed = True
                                 self.strings_num += 1
                                 bundle_strings_count += 1
+                            if changed:
+                                obj.save_typetree(tree)
+                                needs_saving = True
 
                 if needs_saving:
                     out_bundle_path = os.path.join(self.out_dir, self.STREAMING_ASSETS_PATH, bundle_name)
                     os.makedirs(os.path.dirname(out_bundle_path), exist_ok=True)
-                    self.log(f"Writing file: {out_bundle_path} (imported {bundle_strings_count} strings)")
+                    self.log(f"Writing file: {out_bundle_path} (imported {bundle_strings_count} strings, applied {bundle_overrides_count} TMP overrides)")
                     with open(out_bundle_path, "wb") as f:
                         f.write(env.file.save(packer="original"))
                     self.bundles_num += 1
@@ -648,10 +706,11 @@ class ResourcePatcher:
 
     def _summary(self):
         return {
-            'i2languages': 1,
-            'strings':     self.strings_num,
-            'textures':    self.textures_num,
-            'dialogues':   self.dialogues_num,
-            'bundles':     self.bundles_num,
-            'fonts':       self.fonts_num,
+            'i2languages':   1,
+            'strings':       self.strings_num,
+            'textures':      self.textures_num,
+            'dialogues':     self.dialogues_num,
+            'bundles':       self.bundles_num,
+            'fonts':         self.fonts_num,
+            'tmp_overrides': self.tmp_overrides_num,
         }

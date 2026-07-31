@@ -131,9 +131,12 @@ if os.getenv('CREATE_PATCHER', '').lower() == 'true':
         copied_overrides = 0
         for dirpath, dirnames, filenames in os.walk(overrides_dir):
             for filename in filenames:
-                if filename.lower().endswith(('.png', '.ttf', '.otf')):
+                rel = os.path.relpath(dirpath, overrides_dir)
+                # TMP object overrides live in the TMP subfolder as .json files
+                is_tmp_override = (filename.lower().endswith('.json')
+                                   and rel.split(os.sep)[0] == 'TMP')
+                if filename.lower().endswith(('.png', '.ttf', '.otf')) or is_tmp_override:
                     src = os.path.join(dirpath, filename)
-                    rel = os.path.relpath(dirpath, overrides_dir)
                     dst_dir = os.path.join(patcher_overrides_dir, rel)
                     os.makedirs(dst_dir, exist_ok=True)
                     shutil.copy2(src, os.path.join(dst_dir, filename))
@@ -145,6 +148,7 @@ if os.getenv('CREATE_PATCHER', '').lower() == 'true':
     # The executable is placed directly in abs_out_dir alongside data/, resources/, overrides/.
     wrapper_path = os.path.join(script_dir, 'wrapper.py')
     patcher_path = os.path.join(script_dir, 'patcher.py')
+    tmp_override_path = os.path.join(script_dir, 'tmp_override.py')
 
     print("Building patcher executable...")
     log("Building patcher executable")
@@ -172,6 +176,7 @@ if os.getenv('CREATE_PATCHER', '').lower() == 'true':
         '--workpath', os.path.join(script_dir, '.pyinstaller-build'),
         '--specpath', os.path.join(script_dir, '.pyinstaller-build'),
         '--add-data', f'{patcher_path}{sep}.',
+        '--add-data', f'{tmp_override_path}{sep}.',
     ] + collect_args + [wrapper_path]
 
     log(f"PyInstaller command: {' '.join(cmd)}")
@@ -207,11 +212,12 @@ if os.getenv('CREATE_PATCHER', '').lower() == 'true':
 
 from patcher import ResourcePatcher
 
-strings_num   = 0
-textures_num  = 0
-dialogues_num = 0
-bundles_num   = 0
-fonts_num     = 0
+strings_num      = 0
+textures_num     = 0
+dialogues_num    = 0
+bundles_num      = 0
+fonts_num        = 0
+tmp_overrides_num = 0
 
 # tqdm progress -> drive tqdm bars
 def make_progress_callback():
@@ -295,11 +301,12 @@ try:
         patcher._import_textures = lambda: None
 
     summary = patcher.run()
-    strings_num   = summary['strings']
-    textures_num  = summary['textures']
-    dialogues_num = summary['dialogues']
-    bundles_num   = summary['bundles']
-    fonts_num     = summary['fonts']
+    strings_num       = summary['strings']
+    textures_num      = summary['textures']
+    dialogues_num     = summary['dialogues']
+    bundles_num       = summary['bundles']
+    fonts_num         = summary['fonts']
+    tmp_overrides_num = summary['tmp_overrides']
 
 except FileNotFoundError as e:
     print(str(e))
@@ -331,6 +338,7 @@ summary_text = f"""
 [SUMMARY]
 Imported I2Languages: 1
 Imported strings: {strings_num}
+Applied TMP overrides: {tmp_overrides_num}
 Imported textures: {textures_num}
 Imported dialogue databases: {dialogues_num}
 Bundles created: {bundles_num}

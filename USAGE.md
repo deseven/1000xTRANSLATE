@@ -32,6 +32,14 @@ Also see **LLM usage notes** below.
 After running the Exporter, you see the textures appear in your `TEXTURES_DIR`, you can pick any of these and copy them to your `OVERRIDES_DIR` for editing. Overrided textures should have the same format and dimensions as the original ones.
 
 
+## Overriding TextMeshPro objects (`Strings` sheet)
+Sometimes a translated string doesn't fit into the constraints of a TextMeshPro object (font size, margins, alignment and so on) and the object itself has to be adjusted. Since the same object is often copypasted between levels, the toolset can override ALL copies of a particular object at once.
+
+Run `npm run tool:override-TMP -- "<exact original string>"`. The tool scans all scene bundles for world-space TextMeshPro objects with that exact string, fingerprints them and exports one JSON per unique object into `OVERRIDES_DIR/TMP` as `{string}.json` (numbered `{string}-2.json` and so on when several unique objects share the same string). Existing files are never overwritten - remove them first if you want to re-export.
+
+Edit the exported fields as needed (font size, auto sizing, margins, alignment, wrapping, overflow mode, etc.) and run the build as usual. BBB applies each override to every copy of the matching object (in every level) before the regular string replacement pass. The string replacement still runs afterwards, so if you left `m_text` untouched it gets translated as usual; if you changed it, your text wins (unless it happens to match another translated string).
+
+
 ## Overriding the fonts
 The game ships 13 fonts. You can replace any of them with your own font file by placing it in your `OVERRIDES_DIR`.
 

@@ -238,6 +238,7 @@ def _run(game_dir):
         "[SUMMARY]\n"
         f"Imported I2Languages:        {summary['i2languages']}\n"
         f"Imported strings:            {summary['strings']}\n"
+        f"Applied TMP overrides:       {summary['tmp_overrides']}\n"
         f"Imported textures:           {summary['textures']}\n"
         f"Imported dialogue databases: {summary['dialogues']}\n"
         f"Bundles patched:             {summary['bundles']}\n"
