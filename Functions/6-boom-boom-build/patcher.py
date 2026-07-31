@@ -9,9 +9,11 @@ from PIL import Image
 
 from tmp_override import (
     TMP_OVERRIDE_FORMAT,
+    HierarchyResolver,
     is_tmp_tree,
-    tmp_fingerprint,
+    tmp_similarity,
     merge_tmp_override,
+    merge_transform_override,
 )
 
 
@@ -378,15 +380,18 @@ class ResourcePatcher:
         return applied
 
     def _load_tmp_overrides(self):
-        """Load TMP overrides from {overrides_dir}/TMP/*.json, keyed by the
-        fingerprint stored in each file (NOT recomputed from the stored tree -
-        the tree is meant to be edited, which changes its hash)."""
+        """Load TMP overrides from {overrides_dir}/TMP/*.json, indexed by the
+        m_text of their 'match' reference (a different string always scores
+        0, so overrides are only ever compared against same-text objects).
+        Each entry is (filename, payload); matching itself happens via
+        tmp_similarity() against the 'match' block."""
         self._tmp_overrides = {}
         if not self.overrides_dir:
             return
         tmp_dir = os.path.join(self.overrides_dir, 'TMP')
         if not os.path.isdir(tmp_dir):
             return
+        count = 0
         for filename in sorted(os.listdir(tmp_dir)):
             if not filename.lower().endswith('.json'):
                 continue
@@ -397,16 +402,34 @@ class ResourcePatcher:
             except Exception as e:
                 self.log(f"Warning: failed to read TMP override '{path}': {str(e)}")
                 continue
-            if payload.get('format') != TMP_OVERRIDE_FORMAT or 'tree' not in payload or 'hash' not in payload:
-                self.log(f"Warning: '{path}' is not a valid TMP override, skipping")
+            match = payload.get('match')
+            patch = payload.get('patch')
+            if (payload.get('format') != TMP_OVERRIDE_FORMAT
+                    or not isinstance(payload.get('min_similarity'), (int, float))
+                    or not isinstance(match, dict)
+                    or not isinstance(patch, dict)
+                    or not isinstance(match.get('tree'), dict)
+                    or 'm_text' not in match['tree']
+                    or (match.get('transform') is not None
+                        and not isinstance(match['transform'], dict))
+                    or (patch.get('tree') is not None
+                        and not isinstance(patch['tree'], dict))
+                    or (patch.get('transform') is not None
+                        and not isinstance(patch['transform'], dict))):
+                self.log(f"Warning: '{path}' is not a valid TMP override "
+                         f"(or was exported by an old override-TMP version - "
+                         f"re-export it), skipping")
                 continue
-            if payload['hash'] in self._tmp_overrides:
-                self.log(f"Warning: duplicate TMP override for hash {payload['hash']} "
-                         f"('{path}'), keeping the first one")
-                continue
-            self._tmp_overrides[payload['hash']] = payload['tree']
+            # sparse blocks: missing pieces mean "match anything" (match) /
+            # "leave as-is" (patch) - normalize them to empty dicts
+            match.setdefault('transform', {})
+            patch.setdefault('tree', {})
+            patch.setdefault('transform', {})
+            text = match['tree']['m_text']
+            self._tmp_overrides.setdefault(text, []).append((filename, payload))
+            count += 1
         if self._tmp_overrides:
-            self.log(f"Loaded {len(self._tmp_overrides)} TMP override(s) from {tmp_dir}")
+            self.log(f"Loaded {count} TMP override(s) from {tmp_dir}")
 
     def _import_strings(self):
         self._load_tmp_overrides()
@@ -421,6 +444,7 @@ class ResourcePatcher:
                 env = _load_env(file_path)
                 bundle_strings_count = 0
                 bundle_overrides_count = 0
+                resolver = None  # created lazily on first TMP in this bundle
 
                 for obj in env.objects:
                     if obj.type.name == 'MonoBehaviour':
@@ -433,17 +457,48 @@ class ResourcePatcher:
                             continue
                         if is_tmp_tree(tree):
                             changed = False
-                            # TMP overrides first: replace the whole object
-                            # (keeping the target's own pointers), the regular
-                            # string replacement below then still runs on the
-                            # resulting tree
-                            if self._tmp_overrides:
-                                override = self._tmp_overrides.get(tmp_fingerprint(tree))
-                                if override is not None:
-                                    tree = merge_tmp_override(tree, override)
-                                    changed = True
-                                    self.tmp_overrides_num += 1
-                                    bundle_overrides_count += 1
+                            # TMP overrides first: score every override filed
+                            # under the same string against this object, apply
+                            # the best-scoring one that reaches its threshold -
+                            # patch the MonoBehaviour (keeping the target's own
+                            # pointers) and the local transform of its
+                            # GameObject; the regular string replacement below
+                            # then still runs on the resulting tree
+                            candidates = self._tmp_overrides.get(tree['m_text'])
+                            if candidates:
+                                if resolver is None:
+                                    resolver = HierarchyResolver(env)
+                                anchor = resolver.resolve(tree)
+                                if anchor is not None:
+                                    best = None  # (score, filename, payload)
+                                    for filename, payload in candidates:
+                                        score = tmp_similarity(
+                                            tree, anchor['transform'],
+                                            payload['match']['tree'],
+                                            payload['match']['transform'])
+                                        if (score + 1e-12 >= payload['min_similarity']
+                                                and (best is None or score > best[0])):
+                                            best = (score, filename, payload)
+                                    if best is not None:
+                                        score, filename, payload = best
+                                        merged_tree = merge_tmp_override(
+                                            tree, payload['patch']['tree'])
+                                        new_tr = merge_transform_override(
+                                            anchor['transform_tree'],
+                                            payload['patch']['transform'])
+                                        # an override whose patch block still
+                                        # equals the original match block is
+                                        # a no-op - don't count or save it
+                                        if merged_tree != tree or new_tr != anchor['transform_tree']:
+                                            self.log(f"TMP override '{filename}' applied "
+                                                     f"(score {score:.4f}) to an object "
+                                                     f"in {bundle_name}")
+                                            tree = merged_tree
+                                            if new_tr != anchor['transform_tree']:
+                                                anchor['transform_obj'].save_typetree(new_tr)
+                                            changed = True
+                                            self.tmp_overrides_num += 1
+                                            bundle_overrides_count += 1
                             strings_key = tree['m_text'].replace('\t', '\\t').replace('\n', '\\n')
                             if strings_key in self._strings and self._strings[strings_key] != "":
                                 tree['m_text'] = self._strings[strings_key].replace('\\t', '\t').replace('\\n', '\n')

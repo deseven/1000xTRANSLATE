@@ -1,23 +1,46 @@
 """override-TMP: export TextMeshPro object overrides for a given string.
 
 Finds all world-space TextMeshPro objects in the scene bundles whose m_text
-exactly matches the string passed as a command line argument, fingerprints each
-object (sha1 over a whitelist of geometry/typography typetree fields plus the
-string itself) and exports one JSON per unique fingerprint into
-{OVERRIDES_DIR}/TMP as {string}.json (numbered {string}-2.json and so on when
-there are several unique objects with the same string). Only the whitelisted
-geometry/typography fields are exported - those are both the hash base and
-the only fields an override can change.
+exactly matches the given string, groups byte-identical objects together and
+then clusters the groups by similarity (complete linkage: every member of a
+cluster scores >= threshold against every other member). One JSON per cluster
+is exported into {OVERRIDES_DIR}/TMP as "{string} - {parent}.json" (numbered
+"-2" and so on when several clusters share string and parent name).
 
-Edit the exported JSON files (text geometry, alignment, margins, font size,
-whatever is needed) and bbb will apply them to ALL copies of the matching
-objects before the regular string replacement pass (which then still translates
-m_text if it was left unchanged). Matching is done purely by fingerprint - bbb
-always does a full scan over the current game files, so bundle/object ids
-changing between game patches don't matter.
+The similarity score (see tmp_override.py for the exact definition) covers
+all whitelisted TMP typography/geometry params plus the local transform
+(position/rotation/scale relative to the parent) of the GameObject the TMP
+is attached to: 1.0 is an exact match of everything, lower thresholds also
+match "almost the same" objects (e.g. copy-paste float noise). The transform
+matters because the game heavily reuses copy-pasted signs: TMPs on different
+signs can have byte-identical parameters, and the local position is what
+tells their placements apart.
+
+Each exported file carries:
+  min_similarity:  the threshold (the CLI value - edit to re-tune matching)
+  chain:           informational only: ancestor GameObject names of the
+                   reference object, i.e. which sign the file was exported
+                   from (one file may cover several different signs)
+  match:           the reference object the similarity is computed against
+                   (as found in the ORIGINAL game files - normally do not
+                   edit; editing re-targets which objects get patched;
+                   deleting fields excludes them from the score entirely)
+  patch:           what gets applied to matched objects - starts EMPTY on
+                   export, so nothing is overwritten by default: copy the
+                   fields you want to change from 'match' into 'patch'
+                   (typography fields and/or local position/rotation/scale)
+                   and edit them there. Only the listed fields are applied,
+                   everything else stays as-is in each matched object
+
+bbb applies the patch block to every TMP object of the same string whose
+similarity to the match block reaches min_similarity, before the regular
+string replacement pass (which then still translates m_text if it was left
+unchanged). Delete the files of signs you don't want to touch. Matching is
+done purely by score - bbb always does a full scan over the current game
+files, so bundle/object ids changing between game patches don't matter.
 
 Usage:
-    npm run tool:override-TMP -- "<exact string>"
+    npm run tool:override-TMP -- <min_similarity 0.1-1.0> "<exact string>"
 """
 
 import os
@@ -34,18 +57,35 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..',
                                 'Functions', '6-boom-boom-build'))
 from tmp_override import (
     TMP_OVERRIDE_FORMAT,
+    HierarchyResolver,
     is_tmp_tree,
     pick_override_fields,
     tmp_fingerprint,
+    tmp_similarity,
 )
 
 load_dotenv(os.path.join(os.path.dirname(__file__), '..', '..', '.env'))
 
-if len(sys.argv) < 2 or not sys.argv[1]:
-    print('Usage: npm run tool:override-TMP -- "<exact string>"')
+USAGE = 'Usage: npm run tool:override-TMP -- <min_similarity 0.1-1.0> "<exact string>"'
+
+if len(sys.argv) < 3:
+    print(USAGE)
     sys.exit(1)
 
-target_string = sys.argv[1]
+try:
+    threshold = float(sys.argv[1])
+except ValueError:
+    print(f"Error: min_similarity '{sys.argv[1]}' is not a number.")
+    print(USAGE)
+    sys.exit(1)
+if not 0.1 <= threshold <= 1.0:
+    print(f"Error: min_similarity must be between 0.1 and 1.0 (got {threshold}).")
+    sys.exit(1)
+
+target_string = sys.argv[2]
+if not target_string:
+    print(USAGE)
+    sys.exit(1)
 
 # Handle both relative and absolute paths
 def get_path(env_var):
@@ -109,12 +149,14 @@ def sanitize_filename(s, max_len=64):
 scene_bundles = sorted(f for f in os.listdir(bundle_dir)
                        if f.endswith('.bundle') and '_scenes_' in f)
 
-# fingerprint -> {'tree': tree, 'occurrences': [bundle, ...]} - occurrences are
-# only used for the console summary, they are NOT exported: bundle names and
-# object ids can change between game patches, so bbb always does a full scan
-# with hash calculation instead of relying on stored locations
+# fingerprint -> {'tree', 'chain', 'transform', 'parents', 'occurrences'}
+# occurrences/parents are only used for the console summary, they are NOT
+# exported: bundle names and object ids can change between game patches, so
+# bbb always does a full scan with similarity scoring instead of relying on
+# stored locations
 found = {}
 objects_num = 0
+unanchored_num = 0
 
 bar_format = "{desc:<21}{percentage:3.0f}%|{bar}{r_bar}"
 for bundle_name in tqdm(scene_bundles, desc='Scanning TMP objects:',
@@ -125,6 +167,7 @@ for bundle_name in tqdm(scene_bundles, desc='Scanning TMP objects:',
     except Exception as e:
         print(f'\nWarning: failed to load {bundle_name}: {e}')
         continue
+    resolver = None  # created lazily on first matching TMP in this bundle
     for obj in env.objects:
         if obj.type.name != 'MonoBehaviour':
             continue
@@ -139,14 +182,65 @@ for bundle_name in tqdm(scene_bundles, desc='Scanning TMP objects:',
         if tree['m_text'] != target_string:
             continue
         objects_num += 1
-        h = tmp_fingerprint(tree)
-        entry = found.setdefault(h, {'tree': tree, 'occurrences': []})
+        if resolver is None:
+            resolver = HierarchyResolver(env)
+        anchor = resolver.resolve(tree)
+        if anchor is None:
+            unanchored_num += 1
+            continue
+        h = tmp_fingerprint(tree, anchor['transform'])
+        entry = found.setdefault(h, {'tree': tree,
+                                     'chain': anchor['chain'],
+                                     'transform': anchor['transform'],
+                                     'parents': set(),
+                                     'occurrences': []})
         entry['occurrences'].append(bundle_name)
+        entry['parents'].add(anchor['chain'][1] if len(anchor['chain']) > 1
+                             else anchor['chain'][0])
 
 print()
 if objects_num == 0:
     print(f'No TextMeshPro objects found with the exact string: {target_string!r}')
     sys.exit(0)
+if unanchored_num:
+    print(f'Warning: {unanchored_num} object(s) skipped - could not resolve '
+          f'their GameObject/Transform hierarchy')
+
+# ------------------------------------------------------------------
+# Cluster the unique objects by similarity (complete linkage: a merge
+# happens only when EVERY cross-pair scores >= threshold, which guarantees
+# every cluster member scores >= threshold against the exported reference)
+# ------------------------------------------------------------------
+
+groups = [{'fp': h, **entry} for h, entry in sorted(found.items())]
+n = len(groups)
+
+# pairwise similarity between group representatives
+sims = [[0.0] * n for _ in range(n)]
+for i in range(n):
+    sims[i][i] = 1.0
+    for j in range(i + 1, n):
+        s = tmp_similarity(groups[i]['tree'], groups[i]['transform'],
+                           groups[j]['tree'], groups[j]['transform'])
+        sims[i][j] = sims[j][i] = s
+
+clusters = [{i} for i in range(n)]
+while True:
+    best = None  # (min pairwise sim, cluster idx a, cluster idx b)
+    for a in range(len(clusters)):
+        for b in range(a + 1, len(clusters)):
+            ms = min(sims[i][j] for i in clusters[a] for j in clusters[b])
+            if ms >= threshold and (best is None or ms > best[0]):
+                best = (ms, a, b)
+    if best is None:
+        break
+    _, a, b = best
+    clusters[a] |= clusters[b]
+    del clusters[b]
+
+# representative: member with the smallest fingerprint (deterministic)
+clusters = [sorted(c, key=lambda i: groups[i]['fp']) for c in clusters]
+clusters.sort(key=lambda c: groups[c[0]]['fp'])
 
 out_dir = os.path.join(overrides_dir, 'TMP')
 os.makedirs(out_dir, exist_ok=True)
@@ -154,19 +248,42 @@ os.makedirs(out_dir, exist_ok=True)
 name_part = sanitize_filename(target_string)
 created = 0
 skipped = 0
-for i, (h, entry) in enumerate(sorted(found.items())):
-    suffix = '' if i == 0 else f'-{i + 1}'
-    out_path = os.path.join(out_dir, f'{name_part}{suffix}.json')
-    bundles = len(set(entry['occurrences']))
-    print(f"{h}: {len(entry['occurrences'])} object(s) in {bundles} bundle(s)")
+used_names = {}
+for cluster in clusters:
+    rep = groups[cluster[0]]
+    chain = rep['chain']
+    parent_part = sanitize_filename(chain[1] if len(chain) > 1 else chain[0])
+    base = f'{name_part} - {parent_part}'
+    n_used = used_names.get(base, 0) + 1
+    used_names[base] = n_used
+    suffix = '' if n_used == 1 else f'-{n_used}'
+    out_path = os.path.join(out_dir, f'{base}{suffix}.json')
+    occurrences = sum(len(groups[i]['occurrences']) for i in cluster)
+    bundles = len({b for i in cluster for b in groups[i]['occurrences']})
+    parents = sorted({p for i in cluster for p in groups[i]['parents']})
+    print(f"{len(cluster)} unique object(s), {occurrences} occurrence(s) "
+          f"in {bundles} bundle(s)")
+    print(f"  chain: {' <- '.join(chain)}")
+    rep_parent = chain[1] if len(chain) > 1 else chain[0]
+    others = [p for p in parents if p != rep_parent]
+    if others:
+        print(f"  (also covers: {', '.join(others)})")
     if os.path.exists(out_path):
         print(f'  -> skipped (already exists, remove it first to re-export): {out_path}')
         skipped += 1
         continue
+    match = {
+        'transform': rep['transform'],
+        'tree': pick_override_fields(rep['tree']),
+    }
     payload = {
         'format': TMP_OVERRIDE_FORMAT,
-        'hash': h,
-        'tree': pick_override_fields(entry['tree']),
+        'min_similarity': threshold,
+        'chain': chain,
+        'match': match,
+        # starts empty on purpose: nothing is overwritten unless the user
+        # explicitly copies fields from 'match' into 'patch' and edits them
+        'patch': {'transform': {}, 'tree': {}},
     }
     with open(out_path, 'w', encoding='utf-8') as f:
         f.write(json.dumps(payload, indent=2, ensure_ascii=False))
@@ -176,7 +293,8 @@ for i, (h, entry) in enumerate(sorted(found.items())):
 print()
 print('[SUMMARY]')
 print(f'Objects found with this string: {objects_num}')
-print(f'Unique objects:                 {len(found)}')
+print(f'Unique objects:                 {len(groups)}')
+print(f'Clusters at threshold {threshold}:   {len(clusters)}')
 print(f'Overrides created:              {created}')
 if skipped:
     print(f'Skipped (already exist):        {skipped}')
