@@ -456,58 +456,71 @@ class ResourcePatcher:
                             self.log(f"Error processing object in {bundle_name}: {str(inner_e)}")
                             continue
                         if is_tmp_tree(tree):
-                            changed = False
-                            # TMP overrides first: score every override filed
-                            # under the same string against this object, apply
-                            # the best-scoring one that reaches its threshold -
-                            # patch the MonoBehaviour (keeping the target's own
-                            # pointers) and the local transform of its
-                            # GameObject; the regular string replacement below
-                            # then still runs on the resulting tree
-                            candidates = self._tmp_overrides.get(tree['m_text'])
-                            if candidates:
-                                if resolver is None:
-                                    resolver = HierarchyResolver(env)
-                                anchor = resolver.resolve(tree)
-                                if anchor is not None:
-                                    best = None  # (score, filename, payload)
-                                    for filename, payload in candidates:
-                                        score = tmp_similarity(
-                                            tree, anchor['transform'],
-                                            payload['match']['tree'],
-                                            payload['match']['transform'])
-                                        if (score + 1e-12 >= payload['min_similarity']
-                                                and (best is None or score > best[0])):
-                                            best = (score, filename, payload)
-                                    if best is not None:
-                                        score, filename, payload = best
-                                        merged_tree = merge_tmp_override(
-                                            tree, payload['patch']['tree'])
-                                        new_tr = merge_transform_override(
-                                            anchor['transform_tree'],
-                                            payload['patch']['transform'])
-                                        # an override whose patch block still
-                                        # equals the original match block is
-                                        # a no-op - don't count or save it
-                                        if merged_tree != tree or new_tr != anchor['transform_tree']:
-                                            self.log(f"TMP override '{filename}' applied "
-                                                     f"(score {score:.4f}) to an object "
-                                                     f"in {bundle_name}")
-                                            tree = merged_tree
-                                            if new_tr != anchor['transform_tree']:
-                                                anchor['transform_obj'].save_typetree(new_tr)
-                                            changed = True
-                                            self.tmp_overrides_num += 1
-                                            bundle_overrides_count += 1
-                            strings_key = tree['m_text'].replace('\t', '\\t').replace('\n', '\\n')
-                            if strings_key in self._strings and self._strings[strings_key] != "":
-                                tree['m_text'] = self._strings[strings_key].replace('\\t', '\t').replace('\\n', '\n')
-                                changed = True
-                                self.strings_num += 1
-                                bundle_strings_count += 1
-                            if changed:
-                                obj.save_typetree(tree)
-                                needs_saving = True
+                            # one failing object must not abort the whole
+                            # bundle (the bundle is written once at the end) -
+                            # patch best-effort, per object
+                            try:
+                                changed = False
+                                transform_save = None  # (obj, tree), saved below
+                                # TMP overrides first: score every override filed
+                                # under the same string against this object, apply
+                                # the best-scoring one that reaches its threshold -
+                                # patch the MonoBehaviour (keeping the target's own
+                                # pointers) and the local transform of its
+                                # GameObject; the regular string replacement below
+                                # then still runs on the resulting tree
+                                candidates = self._tmp_overrides.get(tree['m_text'])
+                                if candidates:
+                                    if resolver is None:
+                                        resolver = HierarchyResolver(env)
+                                    anchor = resolver.resolve(tree)
+                                    if anchor is not None:
+                                        best = None  # (score, filename, payload)
+                                        for filename, payload in candidates:
+                                            score = tmp_similarity(
+                                                tree, anchor['transform'],
+                                                payload['match']['tree'],
+                                                payload['match']['transform'])
+                                            if (score + 1e-12 >= payload['min_similarity']
+                                                    and (best is None or score > best[0])):
+                                                best = (score, filename, payload)
+                                        if best is not None:
+                                            score, filename, payload = best
+                                            merged_tree = merge_tmp_override(
+                                                tree, payload['patch']['tree'])
+                                            new_tr = merge_transform_override(
+                                                anchor['transform_tree'],
+                                                payload['patch']['transform'])
+                                            # an override whose patch block still
+                                            # equals the original match block is
+                                            # a no-op - don't count or save it
+                                            if merged_tree != tree or new_tr != anchor['transform_tree']:
+                                                self.log(f"TMP override '{filename}' applied "
+                                                         f"(score {score:.4f}) to an object "
+                                                         f"in {bundle_name}")
+                                                tree = merged_tree
+                                                if new_tr != anchor['transform_tree']:
+                                                    transform_save = (anchor['transform_obj'], new_tr)
+                                                changed = True
+                                                self.tmp_overrides_num += 1
+                                                bundle_overrides_count += 1
+                                strings_key = tree['m_text'].replace('\t', '\\t').replace('\n', '\\n')
+                                if strings_key in self._strings and self._strings[strings_key] != "":
+                                    tree['m_text'] = self._strings[strings_key].replace('\\t', '\t').replace('\\n', '\n')
+                                    changed = True
+                                    self.strings_num += 1
+                                    bundle_strings_count += 1
+                                if changed:
+                                    # MonoBehaviour first, then the transform -
+                                    # a modified transform must never be saved
+                                    # without the TMP it belongs to
+                                    obj.save_typetree(tree)
+                                    if transform_save is not None:
+                                        transform_save[0].save_typetree(transform_save[1])
+                                    needs_saving = True
+                            except Exception as inner_e:
+                                self.log(f"Error patching TMP object in {bundle_name}: {str(inner_e)}")
+                                continue
 
                 if needs_saving:
                     out_bundle_path = os.path.join(self.out_dir, self.STREAMING_ASSETS_PATH, bundle_name)

@@ -264,18 +264,35 @@ def _contains_pptr(node):
     return False
 
 
+def _merge_value(base, value):
+    """Merge one override value onto the base value.
+
+    Dicts (Vector3/Vector4/Rect-like {x, y, z, w} structures) merge
+    component-wise, so a patch may carry only the components it changes -
+    replacing the whole dict with a partial one would produce an incomplete
+    vector and make the typetree unserializable (UnityPy walks the typetree
+    nodes and requires every component). Anything else replaces wholesale."""
+    if isinstance(base, dict) and isinstance(value, dict):
+        merged = dict(base)
+        for k, v in value.items():
+            merged[k] = _merge_value(base.get(k), v)
+        return merged
+    return value
+
+
 def merge_tmp_override(base, override):
     """Apply an exported TMP override onto the target object's typetree.
 
     The override only carries the fields that are meant to be changed
-    (geometry/typography/...), everything else stays as-is. Values containing
-    asset pointers are skipped entirely - pointer ids are bundle-local, so
-    ones coming from an override file would be meaningless or harmful."""
+    (geometry/typography/...), everything else stays as-is; dict values merge
+    component-wise (see _merge_value). Values containing asset pointers are
+    skipped entirely - pointer ids are bundle-local, so ones coming from an
+    override file would be meaningless or harmful."""
     merged = dict(base)
     for key, value in override.items():
         if _contains_pptr(value):
             continue
-        merged[key] = value
+        merged[key] = _merge_value(merged.get(key), value)
     return merged
 
 
@@ -283,11 +300,12 @@ def merge_transform_override(base, override):
     """Apply the 'transform' block of an override onto the typetree of the
     Transform object the TMP is attached to. Only the whitelisted TRS fields
     are touched (a Transform also holds m_Father/m_Children pointers which
-    must never be overwritten)."""
+    must never be overwritten); dict values merge component-wise (see
+    _merge_value)."""
     merged = dict(base)
     for key in TRANSFORM_FIELDS:
         if key in override and not _contains_pptr(override[key]):
-            merged[key] = override[key]
+            merged[key] = _merge_value(merged.get(key), override[key])
     return merged
 
 
