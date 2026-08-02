@@ -87,6 +87,14 @@ if not target_string:
     print(USAGE)
     sys.exit(1)
 
+# shells do not expand escape sequences inside quotes, so a multiline string
+# passed as "line1\nline2" arrives with literal backslashes - unescape the
+# common sequences to match the real m_text contents
+target_string = (target_string
+                 .replace('\\n', '\n')
+                 .replace('\\r', '\r')
+                 .replace('\\t', '\t'))
+
 # Handle both relative and absolute paths
 def get_path(env_var):
     path = os.getenv(env_var)
